@@ -1,0 +1,33 @@
+# EeveeLLM Dependencies
+
+# Core dependencies
+python-dateutil>=2.8.2
+pyyaml>=6.0.1
+
+# Vector database for memory
+chromadb>=0.4.18
+
+# API requests
+requests>=2.31.0
+
+# Time and scheduling
+apscheduler>=3.10.4
+
+# Database
+# SQLite comes with Python standard library
+
+# CLI enhancements
+colorama>=0.4.6
+prompt-toolkit>=3.0.43
+
+# Embeddings (for ChromaDB)
+sentence-transformers>=2.2.2
+
+# Optional: better JSON handling
+orjson>=3.9.10
+
+# Development dependencies
+pytest>=7.4.3
+pytest-cov>=4.1.0
+black>=23.12.1
+mypy>=1.7.1
