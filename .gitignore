@@ -45,9 +45,11 @@ data/
 .DS_Store
 Thumbs.db
 
-# Config with secrets
+# Config with secrets - DO NOT COMMIT API KEYS!
+config.yaml
 config_local.yaml
 .env
+*.key
 
 # ChromaDB
 *.chroma/

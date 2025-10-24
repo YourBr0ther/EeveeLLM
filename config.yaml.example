@@ -1,3 +1,6 @@
+# EeveeLLM Configuration Template
+# Copy this file to config.yaml and add your API key
+
 activity_frequency: hourly
 amygdala_stress_weight: 0.6
 debug_mode: false
@@ -13,16 +16,23 @@ initial_trust: 50
 max_working_memory: 10
 memory_retrieval_count: 5
 memory_significance_threshold: 6.0
-nanogpt_api_key: '1628569b-b23b-42f4-ade5-b32a658d5c4a'
+
+# NanoGPT API Settings
+# Get your API key from: https://nano-gpt.com/api
+nanogpt_api_key: 'YOUR_API_KEY_HERE'
 nanogpt_endpoint: https://nano-gpt.com/api/v1/chat/completions
 nanogpt_max_tokens: 150
 nanogpt_model: chatgpt-4o-latest
 nanogpt_temperature: 0.8
+
+# Personality Settings (0-10 scale)
 personality_bravery: 5
 personality_curiosity: 8
 personality_independence: 6
 personality_loyalty: 10
 personality_playfulness: 9
+
+# UI Settings
 show_brain_council: false
 show_memory_retrieval: false
 show_stats_bar: true
@@ -31,9 +41,12 @@ starting_location: trainer_home
 time_acceleration: 1.0
 use_color: true
 verbose_logging: true
+
+# Brain Council Vote Weights (must sum to 1.0)
 vote_weight_amygdala: 0.3
 vote_weight_cerebellum: 0.1
 vote_weight_hippocampus: 0.2
 vote_weight_hypothalamus: 0.15
 vote_weight_prefrontal: 0.25
+
 weather_change_frequency: daily

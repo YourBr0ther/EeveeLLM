@@ -36,33 +36,43 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 
 ## Installation
 
-### Quick Install (Recommended)
+### Quick Install
 
-```bash
-cd /Users/christophervance/EeveeLLM
-pip install colorama pyyaml python-dateutil requests
-python main.py
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/YourBr0ther/EeveeLLM.git
+   cd EeveeLLM
+   ```
 
-### Or use the install script:
+2. **Install dependencies:**
+   ```bash
+   pip install colorama pyyaml python-dateutil requests
+   ```
 
-```bash
-./install.sh
-python main.py
-```
+3. **Configure API key:**
+   ```bash
+   cp config.yaml.example config.yaml
+   # Edit config.yaml and add your NanoGPT API key
+   ```
 
-### Configure NanoGPT API (Optional)
+4. **Run the application:**
+   ```bash
+   python main.py
+   ```
 
-The app works in **fallback mode** without an API key! But if you have a NanoGPT API key:
+### Configure NanoGPT API
 
-```bash
-export NANOGPT_API_KEY="your_api_key_here"
-```
+The app works in **fallback mode** without an API key! But for full AI responses:
 
-Or edit `config.yaml`:
-```yaml
-nanogpt_api_key: "your_key_here"
-```
+1. Get your API key from: https://nano-gpt.com/api
+2. Copy the example config:
+   ```bash
+   cp config.yaml.example config.yaml
+   ```
+3. Edit `config.yaml` and replace `YOUR_API_KEY_HERE` with your actual key
+4. Run the app!
+
+**Note:** `config.yaml` is in `.gitignore` to protect your API key.
 
 ## Usage
 
