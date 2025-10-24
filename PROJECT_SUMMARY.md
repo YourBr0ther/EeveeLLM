@@ -1,9 +1,9 @@
 # EeveeLLM - Project Summary
 
 ## Overview
-EeveeLLM is an AI-powered Pokemon companion featuring a unique "brain council" architecture where 5 different brain regions debate and influence Eevee's decisions, creating genuine, context-aware responses with realistic internal conflicts.
+EeveeLLM is an AI-powered Pokemon companion featuring a unique "brain council" architecture where 5 different brain regions debate and influence Eevee's decisions, creating genuine, context-aware responses with realistic internal conflicts. Now includes a sophisticated vector-based memory system that allows Eevee to form and retrieve meaningful memories.
 
-**Current Status**: Phase 2 Complete (Brain Council System)
+**Current Status**: Phase 3 Complete (Memory System) ✅
 
 ---
 
@@ -258,11 +258,54 @@ eevee-project/
 
 ## Next Steps (Phase 3-5)
 
-### Phase 3: Memory System
-- ChromaDB integration for vector storage
-- Episodic, semantic, emotional, and procedural memory types
-- Memory retrieval during brain council deliberations
-- Memory consolidation and forgetting mechanisms
+### Phase 3: Memory System ✅ (Complete)
+
+**Vector Memory Storage**
+- ChromaDB integration with persistent storage
+- Sentence transformer embeddings (all-MiniLM-L6-v2)
+- 4 separate collections for memory types
+- Semantic similarity search for relevant retrieval
+
+**Memory Types Implemented**
+- **Episodic Memories**: Specific events ("First time exploring forest with trainer")
+- **Semantic Memories**: Facts and knowledge ("Oran berries restore health")
+- **Emotional Memories**: Associations ("Forest = scary but exciting")
+- **Procedural Memories**: Learned behaviors ("When hungry, nuzzle trainer's leg")
+
+**Memory Formation & Consolidation**
+- Significance-based filtering (threshold: 6.0/10)
+- Automatic significance calculation from:
+  - Emotional intensity
+  - Novel experiences
+  - Brain council conflict level
+  - Relationship moments
+  - Extreme states (hunger, danger)
+- Working memory (last 10 interactions)
+- Long-term storage for significant moments
+
+**Memory Retrieval System**
+- Context-aware semantic search
+- Multi-factor relevance scoring (recency, strength, significance)
+- Location and emotion filtering
+- Automatic memory strengthening on access
+- Top-5 relevant memories per deliberation
+
+**Integration with Brain Council**
+- Hippocampus brain region now uses vector memory
+- Memories directly influence voting decisions
+- Graceful fallback if memory system unavailable
+- Debug visualization of memory retrieval
+
+**New Commands**
+- `remember` - Show memory statistics
+- `remember [query]` - Search memories semantically
+- `debug memory` - Toggle memory formation visualization
+
+**Files Added**
+- `memory/memory_types.py` (370 lines) - Memory class definitions
+- `memory/vector_store.py` (400 lines) - ChromaDB wrapper
+- `memory/retrieval.py` (360 lines) - Context-aware retrieval
+- `memory/consolidation.py` (370 lines) - Memory formation logic
 
 ### Phase 4: Time Passage
 - Autonomous behavior simulation

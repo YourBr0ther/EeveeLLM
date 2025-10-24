@@ -165,12 +165,14 @@ Available Commands:
   play                  - Initiate playtime
   give [item]           - Give Eevee an item
   go [location]         - Travel to a connected location
+  remember [query]      - Browse Eevee's memories (Phase 3)
   help                  - Show this help message
   exit / quit           - Save and quit
 
 Debug Commands:
   debug on/off          - Toggle full debug mode
   debug brain           - Toggle brain council visualization
+  debug memory          - Toggle memory retrieval visualization
   debug state           - Show detailed state
         """
         print(help_text)

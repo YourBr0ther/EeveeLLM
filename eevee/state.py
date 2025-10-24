@@ -303,6 +303,7 @@ class EeveeState:
                 'happiness': self.happiness
             },
             'location': self.location,
+            'current_location': self.location,  # Phase 3: Also provide as current_location for memory system
             'time_of_day': self.time_of_day,
             'weather': self.weather,
             'relationship': {

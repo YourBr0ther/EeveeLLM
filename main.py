@@ -16,6 +16,9 @@ from llm.nanogpt_client import NanoGPTClient
 from llm.prompts import PromptBuilder
 from ui import TerminalUI
 
+# Phase 3: Memory system
+from memory import VectorMemoryStore, MemoryRetriever, MemoryConsolidator
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO if Config.VERBOSE_LOGGING else logging.WARNING,
@@ -36,6 +39,33 @@ class EeveeLLM:
         self.response_gen = ResponseGenerator(self.llm_client)
         self.debug_mode = Config.DEBUG_MODE
         self.running = True
+
+        # Phase 3: Initialize memory system
+        try:
+            self.vector_store = VectorMemoryStore()
+            self.memory_retriever = MemoryRetriever(
+                vector_store=self.vector_store,
+                config=Config.__dict__
+            )
+            self.memory_consolidator = MemoryConsolidator(
+                vector_store=self.vector_store,
+                config=Config.__dict__
+            )
+
+            # Integrate memory retriever with Hippocampus
+            if self.response_gen.brain_council:
+                for region in self.response_gen.brain_council.regions:
+                    if region.name == "Hippocampus":
+                        region.memory_retriever = self.memory_retriever
+                        logger.info("Memory system integrated with Hippocampus")
+                        break
+
+            logger.info("Phase 3 memory system initialized successfully")
+        except Exception as e:
+            logger.warning(f"Memory system initialization failed (will use fallback): {e}")
+            self.vector_store = None
+            self.memory_retriever = None
+            self.memory_consolidator = None
 
     def start(self):
         """Start the application"""
@@ -125,6 +155,10 @@ class EeveeLLM:
         elif command == "debug":
             self.handle_debug_command(args)
 
+        elif command == "remember":
+            # Phase 3: Memory browser command
+            self.browse_memories(args)
+
         else:
             # Treat unrecognized input as talking to Eevee
             self.talk_to_eevee(user_input)
@@ -151,6 +185,14 @@ class EeveeLLM:
 
         # Update state
         self._update_after_interaction("talk", message, response)
+
+        # Phase 3: Form memories from this interaction
+        self._form_memory(
+            user_input=message,
+            eevee_response=response,
+            context=context,
+            council_decision=council_decision
+        )
 
     def pet_eevee(self):
         """Pet Eevee"""
@@ -339,8 +381,75 @@ class EeveeLLM:
             self.ui.print_system_message(f"Brain council visualization {status}")
         elif args == "state":
             self.show_stats()
+        elif args == "memory":
+            Config.SHOW_MEMORY_RETRIEVAL = not Config.SHOW_MEMORY_RETRIEVAL
+            status = "enabled" if Config.SHOW_MEMORY_RETRIEVAL else "disabled"
+            self.ui.print_system_message(f"Memory retrieval visualization {status}")
         else:
-            self.ui.print_message("Debug commands: on, off, brain, state")
+            self.ui.print_message("Debug commands: on, off, brain, state, memory")
+
+    def browse_memories(self, query: str):
+        """
+        Phase 3: Browse stored memories
+
+        Args:
+            query: Search query (or empty for stats)
+        """
+        if not self.memory_retriever or not self.vector_store:
+            self.ui.print_message("Memory system not available")
+            return
+
+        try:
+            if not query:
+                # Show memory stats
+                stats = self.vector_store.get_stats()
+                self.ui.print_message("\n=== Memory Statistics ===")
+                self.ui.print_message(f"Total memories: {stats['total_memories']}")
+                for mem_type, count in stats['by_type'].items():
+                    self.ui.print_message(f"  {mem_type.capitalize()}: {count}")
+                self.ui.print_message("\nUse 'remember <query>' to search memories")
+                return
+
+            # Search memories
+            self.ui.print_message(f"\nSearching memories for: '{query}'...")
+
+            results = self.memory_retriever.search_memories(query, limit=10)
+
+            if not results:
+                self.ui.print_message("No memories found matching that query.")
+                return
+
+            self.ui.print_message(f"\nFound {len(results)} relevant memor{'y' if len(results) == 1 else 'ies'}:\n")
+
+            for i, (content, metadata, similarity) in enumerate(results, 1):
+                memory_type = metadata.get('memory_type', 'unknown')
+                emotion = metadata.get('primary_emotion', '')
+                location = metadata.get('location', '')
+                timestamp = metadata.get('timestamp', '')
+
+                # Format timestamp
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(timestamp)
+                    time_str = dt.strftime("%Y-%m-%d %H:%M")
+                except:
+                    time_str = "unknown time"
+
+                self.ui.print_message(f"{i}. [{memory_type}] {content}")
+
+                details = []
+                if emotion:
+                    details.append(f"emotion: {emotion}")
+                if location:
+                    details.append(f"location: {location}")
+                details.append(f"relevance: {similarity:.2f}")
+                details.append(f"time: {time_str}")
+
+                self.ui.print_message(f"   ({', '.join(details)})\n")
+
+        except Exception as e:
+            logger.error(f"Error browsing memories: {e}")
+            self.ui.print_error(f"Error browsing memories: {e}")
 
     def _show_scene(self):
         """Show current scene"""
@@ -395,6 +504,44 @@ class EeveeLLM:
         # Save state
         self.eevee_state.save()
         self.personality.save()
+
+    def _form_memory(self, user_input: str, eevee_response: str,
+                    context: dict, council_decision=None):
+        """
+        Phase 3: Form long-term memories from significant interactions
+
+        Args:
+            user_input: What the user said
+            eevee_response: How Eevee responded
+            context: Full context dict
+            council_decision: Brain council decision (if available)
+        """
+        if not self.memory_consolidator or not self.memory_retriever:
+            return  # Memory system not available
+
+        try:
+            # Add to working memory (short-term)
+            interaction_summary = f"{user_input[:50]}... -> {eevee_response[:50]}..."
+            self.memory_retriever.add_to_working_memory(interaction_summary)
+
+            # Process for long-term memory formation
+            memories = self.memory_consolidator.process_interaction(
+                user_input=user_input,
+                eevee_response=eevee_response,
+                context=context,
+                council_decision=council_decision
+            )
+
+            # Show memory formation in debug mode
+            if memories and (self.debug_mode or Config.SHOW_MEMORY_RETRIEVAL):
+                self.ui.print_system_message(
+                    f"Formed {len(memories)} long-term memor{'y' if len(memories) == 1 else 'ies'}"
+                )
+                for memory in memories:
+                    logger.info(f"Memory stored: {memory.memory_type.value} - {memory.content[:60]}...")
+
+        except Exception as e:
+            logger.error(f"Error forming memory: {e}")
 
     def shutdown(self):
         """Save and shutdown"""

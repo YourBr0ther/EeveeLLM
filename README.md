@@ -4,7 +4,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 
 ## Features
 
-### Currently Implemented (Phases 1-2)
+### Currently Implemented (Phases 1-3)
 
 **Phase 1: Foundation** ✅
 - ✅ Interactive terminal interface with color support
@@ -26,9 +26,17 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Debug Visualization**: See internal deliberation with `debug brain` command
 - ✅ **Context-Aware Decisions**: Responses reflect brain council's reasoning and emotional state
 
-### Coming Soon (Phases 3-5)
-- 🔜 Vector-based memory system with ChromaDB (Phase 3)
-- 🔜 Memory consolidation, retrieval, and types (Phase 3)
+**Phase 3: Memory System** ✅ NEW!
+- ✅ **Vector Memory Storage**: ChromaDB with semantic similarity search
+- ✅ **4 Memory Types**: Episodic (events), Semantic (facts), Emotional (associations), Procedural (learned behaviors)
+- ✅ **Significance-Based Formation**: Only meaningful interactions (>6.0/10) become long-term memories
+- ✅ **Context-Aware Retrieval**: Hippocampus retrieves relevant memories during deliberation
+- ✅ **Working Memory**: Short-term context (last 10 interactions)
+- ✅ **Memory Browser**: Search and explore Eevee's memories with `remember` command
+- ✅ **Automatic Strengthening**: Frequently accessed memories become stronger
+- ✅ **Integrated with Brain Council**: Memories directly influence Hippocampus decisions
+
+### Coming Soon (Phases 4-5)
 - 🔜 Autonomous time passage simulation (Phase 4)
 - 🔜 Activity generation during time gaps (Phase 4)
 - 🔜 Random world events and surprises (Phase 5)
@@ -46,7 +54,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 
 2. **Install dependencies:**
    ```bash
-   pip install colorama pyyaml python-dateutil requests
+   pip install colorama pyyaml python-dateutil requests chromadb sentence-transformers
    ```
 
 3. **Configure API key:**
@@ -86,8 +94,10 @@ The app works in **fallback mode** without an API key! But for full AI responses
 - `stats` - View detailed stats
 - `world` - See current location and surroundings
 - `go [location]` - Travel to a connected location
+- `remember [query]` - Browse Eevee's memories (NEW in Phase 3!)
 - `help` - Show all commands
 - `debug brain` - Toggle brain council visualization
+- `debug memory` - Toggle memory formation visualization (NEW!)
 - `debug on/off` - Toggle full debug mode
 - `exit` - Save and quit
 
@@ -165,19 +175,20 @@ eevee-project/
 - NanoGPT integration
 - Basic responses
 
-### Phase 2: Brain Council 🔜
+### Phase 2: Brain Council ✅
 - 5 brain region classes
 - Voting system
 - Internal deliberation
 - Context-aware modulation
 - Debug visualization
 
-### Phase 3: Memory System 🔜
-- ChromaDB integration
-- Memory types (episodic, semantic, emotional, procedural)
-- Memory retrieval
-- Memory consolidation
-- Memory browser
+### Phase 3: Memory System ✅
+- ChromaDB vector storage
+- 4 memory types (episodic, semantic, emotional, procedural)
+- Significance-based consolidation
+- Semantic similarity retrieval
+- Hippocampus integration
+- Memory browser command
 
 ### Phase 4: Time Passage 🔜
 - Time tracking

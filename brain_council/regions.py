@@ -200,16 +200,100 @@ class Amygdala(BrainRegion):
 
 
 class Hippocampus(BrainRegion):
-    """Memory and context"""
+    """Memory and context - Now powered by vector memory retrieval (Phase 3)"""
 
-    def __init__(self):
+    def __init__(self, memory_retriever=None):
         super().__init__("Hippocampus", 0.20)
+        self.memory_retriever = memory_retriever  # Optional: MemoryRetriever instance
 
     def get_role_description(self) -> str:
         return "Memory - Recalls past experiences and identifies patterns"
 
     def analyze(self, situation: str, context: Dict[str, Any]) -> RegionVote:
-        """Analyze based on memories and patterns"""
+        """Analyze based on memories and patterns (Phase 3: uses vector memory if available)"""
+
+        # Phase 3: If memory retriever is available, use it for semantic search
+        if self.memory_retriever:
+            return self._analyze_with_vector_memory(situation, context)
+
+        # Fallback: Original implementation using working memory
+        return self._analyze_with_working_memory(situation, context)
+
+    def _analyze_with_vector_memory(self, situation: str, context: Dict[str, Any]) -> RegionVote:
+        """Phase 3: Analyze using vector memory retrieval"""
+        try:
+            # Retrieve relevant long-term memories
+            relevant_memories = self.memory_retriever.retrieve_relevant_memories(
+                situation=situation,
+                context=context
+            )
+
+            # Get working memory context
+            working_memory_str = self.memory_retriever.get_working_memory_context()
+
+            # Analyze retrieved memories
+            if relevant_memories:
+                # Find the most relevant memory
+                best_memory = relevant_memories[0]  # Already sorted by relevance
+                memory_content = best_memory[0]
+                memory_metadata = best_memory[1]
+                relevance_score = best_memory[2]
+
+                # Determine sentiment of memory
+                emotion = memory_metadata.get('primary_emotion', 'neutral')
+                significance = memory_metadata.get('significance', 5.0)
+
+                # Positive memories
+                if emotion in ['joy', 'gratitude', 'trust', 'contentment']:
+                    decision = "remember_positive"
+                    reasoning = f"I remember: {memory_content[:80]}... That was good!"
+                    confidence = min(0.9, 0.6 + (relevance_score * 0.3))
+
+                # Negative memories
+                elif emotion in ['fear', 'sadness', 'anger']:
+                    decision = "remember_negative"
+                    reasoning = f"I remember: {memory_content[:80]}... That was scary/difficult."
+                    confidence = min(0.9, 0.6 + (relevance_score * 0.3))
+
+                # Neutral or curious memories
+                else:
+                    decision = "remember_neutral"
+                    reasoning = f"I recall something similar: {memory_content[:80]}..."
+                    confidence = min(0.8, 0.5 + (relevance_score * 0.3))
+
+                # Adjust confidence based on memory significance
+                confidence += (significance - 6.0) / 20.0  # Small boost for very significant memories
+
+            else:
+                # No relevant memories found
+                relationship = context.get('relationship', {})
+                bond = relationship.get('bond', 0)
+
+                if bond > 50:
+                    decision = "trust_pattern"
+                    reasoning = "No direct memory, but I trust trainer based on our relationship."
+                    confidence = 0.6
+                else:
+                    decision = "no_pattern"
+                    reasoning = "This is new. No past experience to guide us."
+                    confidence = 0.4
+
+            return RegionVote(
+                region_name=self.name,
+                decision=decision,
+                reasoning=reasoning,
+                confidence=confidence,
+                emotional_weight=0.4
+            )
+
+        except Exception as e:
+            # If vector memory fails, fall back to working memory
+            import logging
+            logging.getLogger(__name__).error(f"Vector memory retrieval failed: {e}")
+            return self._analyze_with_working_memory(situation, context)
+
+    def _analyze_with_working_memory(self, situation: str, context: Dict[str, Any]) -> RegionVote:
+        """Original implementation using working memory (fallback)"""
         memories = context.get('recent_memories', [])
         relationship = context.get('relationship', {})
 
