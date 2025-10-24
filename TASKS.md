@@ -150,8 +150,10 @@ Ready to begin Phase 3: Memory System implementation with ChromaDB
 
 ### To Run the Application
 ```bash
-cd /Users/christophervance/EeveeLLM
-pip install -r requirements.txt
+git clone https://github.com/YourBr0ther/EeveeLLM.git
+cd EeveeLLM
+pip install colorama pyyaml python-dateutil requests
+cp config.yaml.example config.yaml  # Add your API key if you have one
 python main.py
 ```
 
@@ -160,3 +162,21 @@ python main.py
 > debug brain
 > talk Want to explore the forest?
 ```
+
+---
+
+## GitHub Repository
+
+**Live at:** https://github.com/YourBr0ther/EeveeLLM
+
+### Git Status
+- ✅ Repository initialized
+- ✅ Remote configured
+- ✅ API key secured (not in repo)
+- ✅ 2 commits pushed to main branch
+- ✅ All documentation up to date
+- ✅ Ready for Phase 3 development
+
+### Commits:
+1. `1ad0446` - Initial commit: Phase 1 & 2 complete
+2. `5eb515f` - Security: Protect API key and add config template

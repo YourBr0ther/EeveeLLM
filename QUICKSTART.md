@@ -2,13 +2,24 @@
 
 ## Installation (2 minutes)
 
-1. **Install Python dependencies:**
+1. **Clone the repository:**
    ```bash
-   cd /Users/christophervance/EeveeLLM
-   pip install -r requirements.txt
+   git clone https://github.com/YourBr0ther/EeveeLLM.git
+   cd EeveeLLM
    ```
 
-2. **Run the application:**
+2. **Install Python dependencies:**
+   ```bash
+   pip install colorama pyyaml python-dateutil requests
+   ```
+
+3. **Set up your config:**
+   ```bash
+   cp config.yaml.example config.yaml
+   # Edit config.yaml if you have a NanoGPT API key
+   ```
+
+4. **Run the application:**
    ```bash
    python main.py
    ```
@@ -19,16 +30,13 @@ That's it! The app works in fallback mode without any API keys.
 
 ## Optional: NanoGPT API Setup
 
-If you have a NanoGPT API key:
+If you have a NanoGPT API key for full AI responses:
 
-```bash
-export NANOGPT_API_KEY="your_key_here"
-```
+1. Get your API key from: https://nano-gpt.com/api
+2. Edit `config.yaml` and replace `YOUR_API_KEY_HERE` with your actual key
+3. Run the app!
 
-Or edit `config.yaml`:
-```yaml
-nanogpt_api_key: "your_key_here"
-```
+**Note:** `config.yaml` is gitignored to protect your API key.
 
 ---
 
