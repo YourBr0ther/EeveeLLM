@@ -1,3 +1,11 @@
+```
+ _____ _   _ _____ _____ _     _     __  __
+|  ___| | | | ____| ____| |   | |   |  \/  |
+| |_  | | | |  _| |  _| | |   | |   | |\/| |
+|  _| | |_| | |___| |___| |___| |___| |  | |
+|_|    \___/|_____|_____|_____|_____|_|  |_|
+```
+
 # EeveeLLM - Your Living Pokemon Companion
 
 An AI-powered Eevee companion with realistic brain processes, autonomous behavior, and genuine memory formation. Built with a unique "brain council" architecture where different brain regions debate and influence decisions.
