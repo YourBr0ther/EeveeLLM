@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Banner.png" alt="EeveeLLM Banner" width="800">
+  <img src="Banner.png" alt="EeveeLLM Banner" width="400">
 </div>
 
 # EeveeLLM - Your Living Pokemon Companion
