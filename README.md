@@ -1,10 +1,6 @@
-```
- _____ _   _ _____ _____ _     _     __  __
-|  ___| | | | ____| ____| |   | |   |  \/  |
-| |_  | | | |  _| |  _| | |   | |   | |\/| |
-|  _| | |_| | |___| |___| |___| |___| |  | |
-|_|    \___/|_____|_____|_____|_____|_|  |_|
-```
+<div align="center">
+  <img src="Banner.png" alt="EeveeLLM Banner" width="800">
+</div>
 
 # EeveeLLM - Your Living Pokemon Companion
 
