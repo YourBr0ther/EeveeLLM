@@ -5,8 +5,12 @@ from .council import BrainCouncil
 from .decision import DecisionEngine, CouncilDecision
 from .regions import (
     BrainRegion, PrefrontalCortex, Amygdala,
-    Hippocampus, Hypothalamus, Cerebellum, RegionVote
+    Hippocampus, Hypothalamus, BasalGanglia, RegionVote
 )
+from .neuromodulators import NeuromodulatorOrchestrator  # Phase 6
+
+# Phase 6: Backward compatibility alias
+Cerebellum = BasalGanglia
 
 __all__ = [
     'BrainCouncil',
@@ -17,6 +21,8 @@ __all__ = [
     'Amygdala',
     'Hippocampus',
     'Hypothalamus',
-    'Cerebellum',
-    'RegionVote'
+    'BasalGanglia',
+    'Cerebellum',  # Backward compatibility
+    'RegionVote',
+    'NeuromodulatorOrchestrator'  # Phase 6
 ]

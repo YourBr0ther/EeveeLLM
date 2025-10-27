@@ -16,13 +16,16 @@ class CouncilDecision:
     total_scores: Dict[str, float]
     decision_summary: str
     consensus_level: float  # 0.0 to 1.0, how unified was the decision
+    conflict_level: float = 0.0  # Phase 6: 0.0 to 1.0, how much conflict detected (ACC)
+    conflict_detected: bool = False  # Phase 6: Whether ACC detected significant conflict
 
 
 class DecisionEngine:
     """Processes brain region votes and makes final decisions"""
 
     def __init__(self):
-        pass
+        # Phase 6: ACC (Anterior Cingulate Cortex) - monitors conflict
+        self.acc_conflict_threshold = 0.6  # Threshold for detecting significant conflict
 
     def calculate_vote_score(self, vote: RegionVote, region_weight: float) -> float:
         """
@@ -77,15 +80,21 @@ class DecisionEngine:
         # Calculate consensus level
         consensus = self._calculate_consensus(vote_scores)
 
-        # Generate decision summary
-        summary = self._generate_summary(vote_scores, consensus)
+        # Phase 6: ACC - Calculate conflict level
+        conflict_level = self._acc_detect_conflict(vote_scores)
+        conflict_detected = conflict_level > self.acc_conflict_threshold
+
+        # Generate decision summary (include conflict info if detected)
+        summary = self._generate_summary(vote_scores, consensus, conflict_level, conflict_detected)
 
         return CouncilDecision(
             winning_vote=winning_vote,
             all_votes=[vote for vote, _ in vote_scores],
             total_scores=total_scores,
             decision_summary=summary,
-            consensus_level=consensus
+            consensus_level=consensus,
+            conflict_level=conflict_level,
+            conflict_detected=conflict_detected
         )
 
     def _calculate_consensus(self, vote_scores: List[Tuple[RegionVote, float]]) -> float:
@@ -146,12 +155,66 @@ class DecisionEngine:
 
         return False
 
+    def _acc_detect_conflict(self, vote_scores: List[Tuple[RegionVote, float]]) -> float:
+        """
+        Phase 6: ACC (Anterior Cingulate Cortex) - Detect conflict between regions
+
+        The ACC monitors for disagreement and competing responses, which signals
+        the need for increased cognitive control and conflict resolution.
+
+        Args:
+            vote_scores: List of (vote, score) tuples sorted by score
+
+        Returns:
+            Conflict level (0.0 = no conflict, 1.0 = maximum conflict)
+        """
+        if len(vote_scores) < 2:
+            return 0.0
+
+        # Measure conflict using multiple signals:
+        # 1. Score competition (how close are top scores?)
+        top_score = vote_scores[0][1]
+        second_score = vote_scores[1][1]
+
+        if top_score == 0:
+            score_conflict = 0.5
+        else:
+            # Higher ratio = less conflict (clear winner)
+            # Lower ratio = more conflict (tight competition)
+            score_conflict = second_score / top_score
+
+        # 2. Decision disagreement (are decisions opposing?)
+        top_decision = vote_scores[0][0].decision
+        opposing_votes = sum(
+            1 for vote, _ in vote_scores
+            if not self._decisions_agree(top_decision, vote.decision)
+        )
+        decision_conflict = opposing_votes / len(vote_scores)
+
+        # 3. Emotional conflict (are emotions clashing?)
+        top_emotion = vote_scores[0][0].primary_emotion
+        emotion_variety = len(set(vote.primary_emotion for vote, _ in vote_scores))
+        emotion_conflict = min(1.0, emotion_variety / 5.0)  # More variety = more conflict
+
+        # Weighted combination
+        total_conflict = (
+            score_conflict * 0.4 +
+            decision_conflict * 0.4 +
+            emotion_conflict * 0.2
+        )
+
+        return max(0.0, min(1.0, total_conflict))
+
     def _generate_summary(self, vote_scores: List[Tuple[RegionVote, float]],
-                         consensus: float) -> str:
+                         consensus: float, conflict_level: float = 0.0,
+                         conflict_detected: bool = False) -> str:
         """Generate human-readable summary"""
         winning_vote = vote_scores[0][0]
 
-        if consensus > 0.8:
+        # Phase 6: ACC modifies tone based on conflict detection
+        if conflict_detected:
+            tone = "After significant internal conflict, the council decides:"
+        elif consensus > 0.8:
             tone = "The council unanimously agrees:"
         elif consensus > 0.6:
             tone = "The council generally agrees:"
@@ -168,6 +231,10 @@ class DecisionEngine:
             second_vote = vote_scores[1][0]
             if not self._decisions_agree(winning_vote.decision, second_vote.decision):
                 summary += f"\n(Note: {second_vote.region_name} suggests: {second_vote.decision})"
+
+        # Phase 6: Add conflict warning if ACC detected significant conflict
+        if conflict_detected:
+            summary += f"\n(ACC Warning: High internal conflict detected - {conflict_level:.2f})"
 
         return summary
 
