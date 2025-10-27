@@ -150,6 +150,8 @@ class ActivityGenerator:
         """
         Generate a single activity based on current state
 
+        Phase 5: Can generate special events!
+
         Args:
             state: Current Eevee state (hunger, energy, happiness, etc.)
             elapsed_hours: Hours since last activity
@@ -163,6 +165,32 @@ class ActivityGenerator:
         energy = state.get('energy', 50)
         happiness = state.get('happiness', 70)
         time_since_trainer = state.get('hours_since_trainer', 0)
+
+        # Phase 5: Check for special events first (before urgent needs)
+        # Events have 15% chance to override normal behavior
+        from world.events import EventGenerator
+        event_gen = EventGenerator()
+
+        # Determine time of day
+        hour = current_time.hour
+        if 5 <= hour < 12:
+            time_of_day = "morning"
+        elif 12 <= hour < 17:
+            time_of_day = "day"
+        elif 17 <= hour < 21:
+            time_of_day = "evening"
+        else:
+            time_of_day = "night"
+
+        special_event = event_gen.generate_event(
+            location=last_location,
+            time_of_day=time_of_day,
+            weather="sunny",  # TODO: Track weather
+            personality_traits=self.personality
+        )
+
+        if special_event:
+            return self._create_event_activity(special_event, current_time, last_location)
 
         # Priority 1: URGENT NEEDS
         if hunger > 80:
@@ -409,3 +437,41 @@ class ActivityGenerator:
             emotion_intensity=intensity,
             significance=sig
         )
+
+    def _create_event_activity(self, event, timestamp: datetime, location: str) -> Activity:
+        """
+        Create an Activity from a SpecialEvent (Phase 5)
+
+        Args:
+            event: SpecialEvent object
+            timestamp: When the event occurred
+            location: Where it occurred
+
+        Returns:
+            Activity representing the special event
+        """
+        activity = Activity(
+            timestamp=timestamp,
+            activity_type=ActivityType.EXPLORATION,  # Most events count as exploration
+            description=event.description,
+            location=event.required_location or location,
+            hunger_delta=event.hunger_delta,
+            energy_delta=event.energy_delta,
+            happiness_delta=event.happiness_delta,
+            health_delta=event.health_delta,
+            emotion=event.emotion,
+            emotion_intensity=event.emotion_intensity,
+            significance=event.significance
+        )
+
+        # Add event metadata
+        activity.details["event_id"] = event.id
+        activity.details["event_type"] = event.event_type.value
+        activity.details["event_rarity"] = event.rarity.value
+
+        # Add item if event grants one
+        if event.grants_item:
+            activity.details["found_item"] = event.grants_item
+
+        return activity
+

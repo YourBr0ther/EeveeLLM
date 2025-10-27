@@ -40,7 +40,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Automatic Strengthening**: Frequently accessed memories become stronger
 - ✅ **Integrated with Brain Council**: Memories directly influence Hippocampus decisions
 
-**Phase 4: Time Passage System** ✅ NEW!
+**Phase 4: Time Passage System** ✅
 - ✅ **Autonomous Activities**: Eevee performs 7 types of activities while you're away (needs, exploration, social, survival, emotional, play, rest)
 - ✅ **32+ Activity Templates**: Realistic scenarios with state changes and emotional context
 - ✅ **Personality-Driven Behavior**: Curiosity drives exploration, playfulness drives play
@@ -51,12 +51,20 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Timeline Command**: Review recent activities with `timeline` command
 - ✅ **Debug Testing**: Simulate time passage with `debug time <hours>` command
 
-### Coming Soon (Phase 5)
-- 🔜 Random world events and surprises
-- 🔜 NPC encounters and social dynamics
-- 🔜 Item discovery during exploration
-- 🔜 Evolution system
+**Phase 5: Polish & Expansion** ✅ NEW!
+- ✅ **Enhanced Item System**: 13 functional items with state effects (berries, medicine, toys, treasures)
+- ✅ **Item Discovery**: 25% chance to find items during exploration, rarity-based loot tables
+- ✅ **Use & Inventory Commands**: Use items for effects, view organized inventory
+- ✅ **Special Events**: 17 unique events (weather, encounters, discoveries, phenomena)
+- ✅ **Event System**: 15% chance for special events during activities, rarity-weighted
+- ✅ **Event Rewards**: Some events grant rare items (Rainbow Wing, Old Amber, etc.)
+- ✅ **Memorable Moments**: Events create high-significance memories (7.0+)
+
+### Future Expansion Ideas
+- 🔜 Evolution system (8 evolution paths)
 - 🔜 Skill development through practice
+- 🔜 More NPCs and deeper social dynamics
+- 🔜 Seasonal events and weather system
 
 ## Installation
 
