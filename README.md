@@ -34,13 +34,15 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Vector Memory Storage**: ChromaDB with semantic similarity search
 - ✅ **4 Memory Types**: Episodic (events), Semantic (facts), Emotional (associations), Procedural (learned behaviors)
 - ✅ **Significance-Based Formation**: Only meaningful interactions (>6.0/10) become long-term memories
+- ✅ **"Remember" Keyword Support**: Eevee properly stores facts when you say "remember" or share preferences **[NEW FIX!]**
+- ✅ **Personal Preference Tracking**: "My favorite X", "I like Y", "My name is Z" → Semantic memories **[NEW!]**
 - ✅ **Context-Aware Retrieval**: Hippocampus retrieves relevant memories during deliberation
-- ✅ **Working Memory**: Short-term context (last 10 interactions) **[NEW: Now integrated with brain council!]**
+- ✅ **Working Memory**: Short-term context (last 10 interactions) **[FIXED: Now integrated with brain council!]**
 - ✅ **Memory Browser**: Search and explore Eevee's memories with `remember` command
 - ✅ **Automatic Strengthening**: Frequently accessed memories become stronger **[FIXED: Now working correctly!]**
 - ✅ **Integrated with Brain Council**: Memories directly influence Hippocampus decisions
-- ✅ **Memory Deduplication**: No duplicate memories in context **[NEW: Optimized retrieval]**
-- ✅ **Performance**: 33% faster retrieval (150ms → 100ms) **[NEW: Optimized limits]**
+- ✅ **Memory Deduplication**: No duplicate memories in context **[FIXED: Optimized retrieval]**
+- ✅ **Performance**: 33% faster retrieval (150ms → 100ms) **[FIXED: Optimized limits]**
 
 **Phase 4: Time Passage System** ✅
 - ✅ **Autonomous Activities**: Eevee performs 7 types of activities while you're away (needs, exploration, social, survival, emotional, play, rest)
