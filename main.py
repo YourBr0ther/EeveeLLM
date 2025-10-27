@@ -260,6 +260,13 @@ class EeveeLLM:
             # Phase 5: View inventory
             self.show_inventory()
 
+        elif command in ["drop", "remove"]:
+            # Phase 5: Drop/remove item from inventory
+            if args:
+                self.drop_item(args)
+            else:
+                self.ui.print_message("Drop what? (e.g., 'drop Oran Berry')")
+
         elif command == "go":
             if args:
                 self.travel_to(args)
@@ -483,6 +490,45 @@ class EeveeLLM:
         except Exception as e:
             logger.error(f"Error showing inventory: {e}", exc_info=True)
             self.ui.print_error(f"Failed to show inventory: {e}")
+
+    def drop_item(self, item: str):
+        """Drop/remove an item from inventory (Phase 5)"""
+        try:
+            from world.items import ItemManager
+
+            # Check if item is in inventory (by ID or as unknown item)
+            if not self.eevee_state.has_item(item):
+                # Try to find by name
+                item_def = ItemManager.get_item_by_name(item)
+                if item_def and self.eevee_state.has_item(item_def.id):
+                    item = item_def.id
+                else:
+                    self.ui.print_message(f"You don't have '{item}' in your inventory.")
+                    return
+
+            # Get item definition for display (if it exists)
+            item_def = ItemManager.get_item(item)
+            if not item_def:
+                item_def = ItemManager.get_item_by_name(item)
+
+            # Remove the item
+            success = self.eevee_state.remove_item(item)
+
+            if success:
+                if item_def:
+                    self.ui.print_user_input(f"*drops {item_def.name}*")
+                    self.ui.print_message(f"Dropped {item_def.emoji} {item_def.name}")
+                else:
+                    self.ui.print_user_input(f"*drops {item}*")
+                    self.ui.print_message(f"Dropped {item}")
+
+                logger.info(f"Dropped item: {item}")
+            else:
+                self.ui.print_message(f"Failed to drop '{item}'")
+
+        except Exception as e:
+            logger.error(f"Error dropping item: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to drop item: {e}")
 
     def travel_to(self, destination: str):
         """Travel to a location"""

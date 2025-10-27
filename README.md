@@ -116,6 +116,7 @@ The app works in **fallback mode** without an API key! But for full AI responses
 - `give [item]` - Give Eevee an item (e.g., "give Oran Berry")
 - `use [item]` - Use an item from inventory (NEW in Phase 5!)
 - `inventory` - View your inventory (NEW in Phase 5!)
+- `drop [item]` - Drop/remove an item from inventory (NEW in Phase 5!)
 - `observe` - See what Eevee is currently doing
 - `stats` - View detailed stats
 - `world` - See current location and surroundings
