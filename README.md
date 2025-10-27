@@ -37,7 +37,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **"Remember" Keyword Support**: Eevee properly stores facts when you say "remember" or share preferences **[NEW FIX!]**
 - ✅ **Personal Preference Tracking**: "My favorite X", "I like Y", "My name is Z" → Semantic memories **[NEW!]**
 - ✅ **Context-Aware Retrieval**: Hippocampus retrieves relevant memories during deliberation
-- ✅ **Working Memory**: Short-term context (last 10 interactions) **[FIXED: Now integrated with brain council!]**
+- ✅ **Enhanced Working Memory**: Short-term retention (100 interactions OR 7 days) **[NEW: 10x capacity + time-based retention!]**
 - ✅ **Memory Browser**: Search and explore Eevee's memories with `remember` command
 - ✅ **Automatic Strengthening**: Frequently accessed memories become stronger **[FIXED: Now working correctly!]**
 - ✅ **Integrated with Brain Council**: Memories directly influence Hippocampus decisions

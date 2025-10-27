@@ -351,30 +351,122 @@ class ProceduralMemory(Memory):
 
 
 @dataclass
+class WorkingMemoryItem:
+    """Individual item in working memory with timestamp"""
+    content: str
+    timestamp: datetime
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "content": self.content,
+            "timestamp": self.timestamp.isoformat()
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'WorkingMemoryItem':
+        return cls(
+            content=data["content"],
+            timestamp=datetime.fromisoformat(data["timestamp"])
+        )
+
+
+@dataclass
 class WorkingMemory:
     """
-    Short-term working memory - last 10 interactions
-    Gets cleared periodically, significant ones consolidated to long-term
+    Short-term working memory - stores recent interactions for up to 7 days
+
+    Capacity: Up to 100 recent interactions OR 7 days, whichever comes first
+    Purpose: Remember mundane everyday conversations that aren't significant
+             enough for long-term storage, but should be recalled within the week
+
+    Examples of what stays in working memory:
+    - "I bought milk today" (mundane update)
+    - "Let's go to the park" (routine activity)
+    - "How was your day?" (casual conversation)
     """
-    max_size: int = 10
-    memories: List[str] = field(default_factory=list)  # List of recent interaction strings
+    max_size: int = 100  # Increased from 10 to 100 interactions
+    max_age_days: int = 7  # Keep memories for up to 7 days
+    memories: List[WorkingMemoryItem] = field(default_factory=list)
 
     def add(self, content: str) -> None:
-        """Add to working memory, removing oldest if full"""
-        self.memories.append(content)
-        if len(self.memories) > self.max_size:
-            self.memories.pop(0)
+        """Add to working memory with timestamp"""
+        item = WorkingMemoryItem(content=content, timestamp=datetime.now())
+        self.memories.append(item)
 
-    def get_recent(self, count: int = 5) -> List[str]:
+        # Clean up old memories
+        self._cleanup()
+
+    def _cleanup(self) -> None:
+        """Remove memories that are too old or exceed capacity"""
+        now = datetime.now()
+
+        # Remove memories older than max_age_days
+        self.memories = [
+            mem for mem in self.memories
+            if (now - mem.timestamp).days < self.max_age_days
+        ]
+
+        # Keep only the most recent max_size memories
+        if len(self.memories) > self.max_size:
+            self.memories = self.memories[-self.max_size:]
+
+    def get_recent(self, count: int = 10) -> List[str]:
         """Get the N most recent memories"""
-        return self.memories[-count:]
+        self._cleanup()  # Clean before retrieving
+        recent = self.memories[-count:]
+        return [item.content for item in recent]
+
+    def get_memories_since(self, days: int = 1) -> List[str]:
+        """Get all memories from the last N days"""
+        self._cleanup()
+        now = datetime.now()
+        recent_items = [
+            item for item in self.memories
+            if (now - item.timestamp).days < days
+        ]
+        return [item.content for item in recent_items]
+
+    def get_all(self) -> List[str]:
+        """Get all working memories (up to 7 days old)"""
+        self._cleanup()
+        return [item.content for item in self.memories]
 
     def clear(self) -> None:
         """Clear working memory"""
         self.memories.clear()
 
-    def to_context_string(self) -> str:
-        """Convert working memory to a context string for brain council"""
+    def to_context_string(self, recent_count: int = 10) -> str:
+        """
+        Convert working memory to a context string for brain council
+
+        Args:
+            recent_count: Number of recent memories to include (default: 10)
+        """
+        self._cleanup()
         if not self.memories:
             return "No recent memories."
-        return "\n".join([f"- {mem}" for mem in self.memories[-5:]])
+
+        recent = self.get_recent(recent_count)
+        return "\n".join([f"- {mem}" for mem in recent])
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for persistence"""
+        return {
+            "max_size": self.max_size,
+            "max_age_days": self.max_age_days,
+            "memories": [item.to_dict() for item in self.memories]
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'WorkingMemory':
+        """Load from dictionary"""
+        wm = cls(
+            max_size=data.get("max_size", 100),
+            max_age_days=data.get("max_age_days", 7)
+        )
+        wm.memories = [
+            WorkingMemoryItem.from_dict(item)
+            for item in data.get("memories", [])
+        ]
+        wm._cleanup()  # Clean on load
+        return wm
