@@ -35,12 +35,39 @@ class EeveeLLM:
     """Main application controller"""
 
     def __init__(self):
-        self.ui = TerminalUI()
-        self.eevee_state = EeveeState()
-        self.personality = Personality()
-        self.world = WorldMap()
-        self.llm_client = NanoGPTClient()
-        self.response_gen = ResponseGenerator(self.llm_client)
+        """Initialize EeveeLLM application with comprehensive error handling"""
+        try:
+            self.ui = TerminalUI()
+        except Exception as e:
+            print(f"Fatal: Failed to initialize UI: {e}")
+            raise
+
+        try:
+            self.eevee_state = EeveeState()
+        except Exception as e:
+            print(f"Fatal: Failed to initialize Eevee state (database error?): {e}")
+            raise
+
+        try:
+            self.personality = Personality()
+        except Exception as e:
+            logger.error(f"Failed to load personality, using defaults: {e}")
+            self.personality = None
+
+        try:
+            self.world = WorldMap()
+        except Exception as e:
+            logger.error(f"Failed to load world map: {e}")
+            raise
+
+        try:
+            self.llm_client = NanoGPTClient()
+            self.response_gen = ResponseGenerator(self.llm_client)
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed (will use fallback mode): {e}")
+            self.llm_client = None
+            self.response_gen = ResponseGenerator(None)
+
         self.debug_mode = Config.DEBUG_MODE
         self.running = True
         self.last_timeline = None  # Phase 4: Store last timeline for replay
@@ -293,180 +320,215 @@ class EeveeLLM:
 
     def pet_eevee(self):
         """Pet Eevee"""
-        self.ui.print_user_input("*pets Eevee gently*")
+        try:
+            self.ui.print_user_input("*pets Eevee gently*")
 
-        context = self._build_context()
-        response, _ = self.response_gen.generate_response(
-            "The trainer pets me gently",
-            context,
-            debug=self.debug_mode,
-            world_map=self.world
-        )
-
-        self.ui.print_eevee_response(response)
-
-        # Increase happiness and trust
-        self.eevee_state.update_physical_state(
-            happiness=min(100, self.eevee_state.happiness + 5)
-        )
-        self.eevee_state.update_relationship(trust_delta=1)
-
-        self._update_after_interaction("pet", "pet", response)
-
-    def play_with_eevee(self):
-        """Play with Eevee"""
-        self.ui.print_user_input("*initiates playtime*")
-
-        context = self._build_context()
-        response = self.response_gen.describe_action("playing", context)
-
-        self.ui.print_eevee_response(response)
-
-        # Update state based on energy
-        if self.eevee_state.energy > 30:
-            self.eevee_state.update_physical_state(
-                happiness=min(100, self.eevee_state.happiness + 10),
-                energy=max(0, self.eevee_state.energy - 10),
-                hunger=min(100, self.eevee_state.hunger + 5)
+            context = self._build_context()
+            response, _ = self.response_gen.generate_response(
+                "The trainer pets me gently",
+                context,
+                debug=self.debug_mode,
+                world_map=self.world
             )
-            self.eevee_state.update_relationship(bond_delta=2)
-        else:
-            self.ui.print_system_message("Eevee seems too tired to play much...")
 
-        self._update_after_interaction("play", "play", response)
+            self.ui.print_eevee_response(response)
 
-    def give_item(self, item: str):
-        """Give item to Eevee (Phase 5: Enhanced with item catalog)"""
-        from world.items import ItemManager
-
-        self.ui.print_user_input(f"*offers {item}*")
-
-        # Check if this is a catalog item
-        item_def = ItemManager.get_item(item)
-        if not item_def:
-            item_def = ItemManager.get_item_by_name(item)
-
-        if item_def:
-            # Known catalog item
-            self.ui.print_eevee_response(
-                f"*Eevee's eyes light up* Vee! *happily accepts the {item_def.name}* {item_def.emoji}"
-            )
-            self.eevee_state.add_item(item_def.id)
+            # Increase happiness and trust
             self.eevee_state.update_physical_state(
                 happiness=min(100, self.eevee_state.happiness + 5)
             )
-        else:
-            # Unknown item - add anyway
-            self.ui.print_eevee_response(f"*Eevee sniffs {item} curiously* Vee?")
-            self.eevee_state.add_item(item)
+            self.eevee_state.update_relationship(trust_delta=1)
+
+            self._update_after_interaction("pet", "pet", response)
+
+        except Exception as e:
+            logger.error(f"Error petting Eevee: {e}", exc_info=True)
+            self.ui.print_error(f"Something went wrong: {e}")
+
+    def play_with_eevee(self):
+        """Play with Eevee"""
+        try:
+            self.ui.print_user_input("*initiates playtime*")
+
+            context = self._build_context()
+            response = self.response_gen.describe_action("playing", context)
+
+            self.ui.print_eevee_response(response)
+
+            # Update state based on energy
+            if self.eevee_state.energy > 30:
+                self.eevee_state.update_physical_state(
+                    happiness=min(100, self.eevee_state.happiness + 10),
+                    energy=max(0, self.eevee_state.energy - 10),
+                    hunger=min(100, self.eevee_state.hunger + 5)
+                )
+                self.eevee_state.update_relationship(bond_delta=2)
+            else:
+                self.ui.print_system_message("Eevee seems too tired to play much...")
+
+            self._update_after_interaction("play", "play", response)
+
+        except Exception as e:
+            logger.error(f"Error playing with Eevee: {e}", exc_info=True)
+            self.ui.print_error(f"Something went wrong: {e}")
+
+    def give_item(self, item: str):
+        """Give item to Eevee (Phase 5: Enhanced with item catalog)"""
+        try:
+            from world.items import ItemManager
+
+            self.ui.print_user_input(f"*offers {item}*")
+
+            # Check if this is a catalog item
+            item_def = ItemManager.get_item(item)
+            if not item_def:
+                item_def = ItemManager.get_item_by_name(item)
+
+            if item_def:
+                # Known catalog item
+                self.ui.print_eevee_response(
+                    f"*Eevee's eyes light up* Vee! *happily accepts the {item_def.name}* {item_def.emoji}"
+                )
+                self.eevee_state.add_item(item_def.id)
+                self.eevee_state.update_physical_state(
+                    happiness=min(100, self.eevee_state.happiness + 5)
+                )
+            else:
+                # Unknown item - add anyway
+                self.ui.print_eevee_response(f"*Eevee sniffs {item} curiously* Vee?")
+                self.eevee_state.add_item(item)
+
+        except Exception as e:
+            logger.error(f"Error giving item: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to give item: {e}")
 
     def use_item(self, item: str):
         """Use an item from inventory (Phase 5)"""
-        self.ui.print_user_input(f"*uses {item}*")
+        try:
+            self.ui.print_user_input(f"*uses {item}*")
 
-        success, new_state, message = self.eevee_state.use_item(item)
+            success, new_state, message = self.eevee_state.use_item(item)
 
-        if success:
-            self.ui.print_eevee_response(message)
+            if success:
+                self.ui.print_eevee_response(message)
 
-            # Show state changes
-            if new_state:
-                changes = []
-                old_state = {
-                    'hunger': new_state['hunger'],
-                    'energy': new_state['energy'],
-                    'happiness': new_state['happiness'],
-                    'health': new_state['health']
-                }
-                # Note: State already applied, just show message
+                # Show state changes
+                if new_state:
+                    changes = []
+                    old_state = {
+                        'hunger': new_state['hunger'],
+                        'energy': new_state['energy'],
+                        'happiness': new_state['happiness'],
+                        'health': new_state['health']
+                    }
+                    # Note: State already applied, just show message
 
-            # Update after interaction
-            self._update_after_interaction("use_item", item, message)
-        else:
-            self.ui.print_message(message)
+                # Update after interaction
+                self._update_after_interaction("use_item", item, message)
+            else:
+                self.ui.print_message(message)
+
+        except Exception as e:
+            logger.error(f"Error using item: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to use item: {e}")
 
     def show_inventory(self):
         """Show Eevee's inventory (Phase 5)"""
-        from world.items import ItemManager
+        try:
+            from world.items import ItemManager
 
-        inventory = self.eevee_state.inventory
+            inventory = self.eevee_state.inventory
 
-        if not inventory:
-            self.ui.print_message("\n📦 Inventory is empty")
-            return
+            if not inventory:
+                self.ui.print_message("\n📦 Inventory is empty")
+                return
 
-        self.ui.print_message(f"\n📦 Inventory ({len(inventory)} items):")
-        self.ui.print_message("=" * 60)
+            self.ui.print_message(f"\n📦 Inventory ({len(inventory)} items):")
+            self.ui.print_message("=" * 60)
 
-        # Group items by type
-        items_by_type = {}
-        for item_id in inventory:
-            item_def = ItemManager.get_item(item_id)
-            if item_def:
-                item_type = item_def.item_type.value
-                if item_type not in items_by_type:
-                    items_by_type[item_type] = []
-                items_by_type[item_type].append(item_def)
-            else:
-                # Unknown item
-                if "unknown" not in items_by_type:
-                    items_by_type["unknown"] = []
-                items_by_type["unknown"].append(item_id)
-
-        # Display by category
-        for category, items in sorted(items_by_type.items()):
-            self.ui.print_message(f"\n{category.upper()}:")
-            for item in items:
-                if isinstance(item, str):
-                    # Unknown item
-                    self.ui.print_message(f"  • {item}")
+            # Group items by type
+            items_by_type = {}
+            for item_id in inventory:
+                item_def = ItemManager.get_item(item_id)
+                if item_def:
+                    item_type = item_def.item_type.value
+                    if item_type not in items_by_type:
+                        items_by_type[item_type] = []
+                    items_by_type[item_type].append(item_def)
                 else:
-                    # Catalog item
-                    consumable_str = "" if item.consumable else " (Keepsake)"
-                    self.ui.print_message(
-                        f"  {item.emoji} {item.name}{consumable_str}"
-                    )
-                    self.ui.print_message(f"     {item.description}")
+                    # Unknown item
+                    if "unknown" not in items_by_type:
+                        items_by_type["unknown"] = []
+                    items_by_type["unknown"].append(item_id)
 
-        self.ui.print_message("\n" + "=" * 60)
-        self.ui.print_message("Use 'use <item>' to use an item")
-        self.ui.print_message()
+            # Display by category
+            for category, items in sorted(items_by_type.items()):
+                self.ui.print_message(f"\n{category.upper()}:")
+                for item in items:
+                    if isinstance(item, str):
+                        # Unknown item
+                        self.ui.print_message(f"  • {item}")
+                    else:
+                        # Catalog item
+                        consumable_str = "" if item.consumable else " (Keepsake)"
+                        self.ui.print_message(
+                            f"  {item.emoji} {item.name}{consumable_str}"
+                        )
+                        self.ui.print_message(f"     {item.description}")
+
+            self.ui.print_message("\n" + "=" * 60)
+            self.ui.print_message("Use 'use <item>' to use an item")
+            self.ui.print_message()
+
+        except Exception as e:
+            logger.error(f"Error showing inventory: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to show inventory: {e}")
 
     def travel_to(self, destination: str):
         """Travel to a location"""
-        current_loc = self.world.get_location(self.eevee_state.location)
-        target_loc = self.world.get_location_by_name(destination)
+        try:
+            current_loc = self.world.get_location(self.eevee_state.location)
+            target_loc = self.world.get_location_by_name(destination)
 
-        if not target_loc:
-            # Try by ID
-            target_loc = self.world.get_location(destination)
+            if not target_loc:
+                # Try by ID
+                target_loc = self.world.get_location(destination)
 
-        if not target_loc:
-            self.ui.print_message(f"Unknown location: {destination}")
-            return
+            if not target_loc:
+                self.ui.print_message(f"Unknown location: {destination}")
+                return
 
-        if not self.world.can_travel(current_loc.id, target_loc.id):
-            self.ui.print_message(f"You can't go directly to {target_loc.name} from here.")
-            return
+            if not current_loc:
+                logger.error(f"Current location not found: {self.eevee_state.location}")
+                self.ui.print_error("Error: Current location is invalid")
+                return
 
-        # Travel
-        self.ui.print_system_message(f"Traveling to {target_loc.name}...")
-        self.eevee_state._state['current_location'] = target_loc.id
+            if not self.world.can_travel(current_loc.id, target_loc.id):
+                self.ui.print_message(f"You can't go directly to {target_loc.name} from here.")
+                return
 
-        # Show new location
-        self._show_scene()
+            # Travel
+            self.ui.print_system_message(f"Traveling to {target_loc.name}...")
+            self.eevee_state.update_location(target_loc.id)
 
-        # Eevee reacts
-        context = self._build_context()
-        response, _ = self.response_gen.generate_response(
-            f"We arrived at {target_loc.name}",
-            context,
-            debug=self.debug_mode,
-            world_map=self.world
-        )
-        self.ui.print_eevee_response(response)
+            # Show new location
+            self._show_scene()
 
-        self._update_after_interaction("travel", f"go {target_loc.name}", response)
+            # Eevee reacts
+            context = self._build_context()
+            response, _ = self.response_gen.generate_response(
+                f"We arrived at {target_loc.name}",
+                context,
+                debug=self.debug_mode,
+                world_map=self.world
+            )
+            self.ui.print_eevee_response(response)
+
+            self._update_after_interaction("travel", f"go {target_loc.name}", response)
+
+        except Exception as e:
+            logger.error(f"Error during travel: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to travel: {e}")
 
     def observe_eevee(self):
         """Observe what Eevee is doing"""
@@ -605,7 +667,7 @@ class EeveeLLM:
                     from datetime import datetime
                     dt = datetime.fromisoformat(timestamp)
                     time_str = dt.strftime("%Y-%m-%d %H:%M")
-                except:
+                except Exception:
                     time_str = "unknown time"
 
                 self.ui.print_message(f"{i}. [{memory_type}] {content}")

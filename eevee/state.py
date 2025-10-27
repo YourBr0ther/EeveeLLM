@@ -229,6 +229,10 @@ class EeveeState:
             self._state['bond_strength'] = max(0, min(100,
                 self._state['bond_strength'] + bond_delta))
 
+    def update_location(self, location_id: str):
+        """Update current location"""
+        self._state['current_location'] = location_id
+
     def add_item(self, item: str):
         """Add item to inventory"""
         if item not in self._state['inventory']:
