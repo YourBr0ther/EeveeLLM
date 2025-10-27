@@ -12,6 +12,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 
 **Phase 1: Foundation** ✅
 - ✅ Interactive terminal interface with color support
+- ✅ **Natural Language Commands**: Talk naturally instead of using exact command syntax **[NEW!]**
 - ✅ Eevee state management (hunger, energy, happiness, health)
 - ✅ Personality system (curiosity, bravery, playfulness, loyalty, independence)
 - ✅ Location-based world with 8 explorable areas

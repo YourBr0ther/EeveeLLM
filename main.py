@@ -23,6 +23,9 @@ from memory import VectorMemoryStore, MemoryRetriever, MemoryConsolidator
 from world.activities import ActivityGenerator
 from world.time_simulation import TimeSimulator
 
+# Natural language processing
+from nlp.intent_parser import IntentParser
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO if Config.VERBOSE_LOGGING else logging.WARNING,
@@ -125,6 +128,14 @@ class EeveeLLM:
             self.activity_generator = None
             self.time_simulator = None
 
+        # Initialize natural language intent parser
+        try:
+            self.intent_parser = IntentParser()
+            logger.info("Natural language intent parser initialized")
+        except Exception as e:
+            logger.warning(f"Intent parser initialization failed: {e}")
+            self.intent_parser = None
+
     def start(self):
         """Start the application"""
         self.ui.clear_screen()
@@ -216,10 +227,24 @@ class EeveeLLM:
         self.shutdown()
 
     def process_command(self, user_input: str):
-        """Process user command"""
-        parts = user_input.lower().split(maxsplit=1)
-        command = parts[0]
-        args = parts[1] if len(parts) > 1 else ""
+        """Process user command (with natural language support)"""
+
+        # Try to parse natural language intent first
+        intent = None
+        if self.intent_parser:
+            intent = self.intent_parser.parse(user_input)
+
+        # If intent detected, use it; otherwise fall back to exact command parsing
+        if intent:
+            command = intent.command
+            args = intent.args
+            if Config.VERBOSE_LOGGING:
+                logger.info(f"Natural language detected: '{user_input}' → {command} {args}")
+        else:
+            # Fall back to exact command parsing
+            parts = user_input.lower().split(maxsplit=1)
+            command = parts[0]
+            args = parts[1] if len(parts) > 1 else ""
 
         # Commands
         if command in ["exit", "quit", "q"]:
