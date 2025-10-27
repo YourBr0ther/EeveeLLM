@@ -114,10 +114,60 @@ class TerminalUI:
         else:
             print(f"\nYou: {text}")
 
+    def _format_eevee_response(self, response: str) -> str:
+        """
+        Format Eevee's response with color-coded actions and speech.
+
+        Actions (in *asterisks*) -> Dim/Gray
+        Speech ("quotes" or Vee sounds) -> Bright Cyan
+        Regular text -> Default
+        """
+        if not self.use_color:
+            return response
+
+        import re
+        formatted = ""
+        last_end = 0
+
+        # Pattern to match:
+        # 1. Actions in asterisks: *like this*
+        # 2. Quoted speech: "like this"
+        # 3. Vee sounds: Vee, Veevee, etc.
+        pattern = r'(\*[^*]+\*)|("([^"]*)"|\'([^\']*)\')|(\b[Vv]ee+[!?~.]*\b)'
+
+        for match in re.finditer(pattern, response):
+            # Add any text before this match (regular text)
+            if match.start() > last_end:
+                formatted += response[last_end:match.start()]
+
+            matched_text = match.group(0)
+
+            if matched_text.startswith('*') and matched_text.endswith('*'):
+                # Actions - dim/gray color
+                formatted += f"{Style.DIM}{Fore.WHITE}{matched_text}{Style.RESET_ALL}"
+            elif matched_text.startswith('"') or matched_text.startswith("'"):
+                # Quoted speech - bright cyan
+                formatted += f"{Style.BRIGHT}{Fore.CYAN}{matched_text}{Style.RESET_ALL}"
+            elif matched_text.lower().startswith('vee'):
+                # Vee sounds - bright cyan
+                formatted += f"{Style.BRIGHT}{Fore.CYAN}{matched_text}{Style.RESET_ALL}"
+            else:
+                formatted += matched_text
+
+            last_end = match.end()
+
+        # Add any remaining text
+        if last_end < len(response):
+            formatted += response[last_end:]
+
+        return formatted
+
     def print_eevee_response(self, response: str):
-        """Print Eevee's response"""
+        """Print Eevee's response with color-coded formatting"""
+        formatted_response = self._format_eevee_response(response)
+
         if self.use_color:
-            print(f"\n{Fore.MAGENTA}Eevee:{Style.RESET_ALL} {response}\n")
+            print(f"\n{Fore.MAGENTA}Eevee:{Style.RESET_ALL} {formatted_response}\n")
         else:
             print(f"\nEevee: {response}\n")
 
