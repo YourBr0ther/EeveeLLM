@@ -478,7 +478,7 @@ class EeveeLLM:
 
             self.ui.print_message("\n" + "=" * 60)
             self.ui.print_message("Use 'use <item>' to use an item")
-            self.ui.print_message()
+            self.ui.print_message("")  # Empty line
 
         except Exception as e:
             logger.error(f"Error showing inventory: {e}", exc_info=True)
