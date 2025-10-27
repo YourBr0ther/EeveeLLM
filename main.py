@@ -755,11 +755,18 @@ class EeveeLLM:
         self.ui.print_location_description(location.description)
 
     def _build_context(self):
-        """Build context dictionary"""
-        return PromptBuilder.build_context_dict(
+        """Build context dictionary with working memory"""
+        context = PromptBuilder.build_context_dict(
             self.eevee_state,
             self.personality
         )
+
+        # Phase 3 Fix: Add working memory (recent conversation) to context
+        if self.memory_retriever:
+            context['recent_memories'] = self.memory_retriever.working_memory.memories
+            context['working_memory_context'] = self.memory_retriever.get_working_memory_context()
+
+        return context
 
     def _update_after_interaction(self, interaction_type: str,
                                   user_input: str, eevee_response: str):

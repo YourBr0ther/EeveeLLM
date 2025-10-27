@@ -78,6 +78,8 @@ class VectorMemoryStore:
 
             # Prepare metadata (ChromaDB requires string, int, float, or bool values)
             metadata = {
+                "memory_id": memory.memory_id,  # Fix: Add memory_id for tracking
+                "memory_type": memory.memory_type.value,  # Fix: Add memory_type for retrieval
                 "timestamp": memory.timestamp.isoformat(),
                 "significance": memory.significance,
                 "emotion_intensity": memory.emotion_intensity,

@@ -65,9 +65,10 @@ class MemoryRetriever:
             all_memories = []
 
             # 1. Semantic search - Find memories similar to current situation
+            # Optimization: Request exact amount needed instead of 2x
             semantic_results = self.vector_store.retrieve_similar(
                 query=situation,
-                n_results=self.memory_retrieval_count * 2,  # Get more, then filter
+                n_results=self.memory_retrieval_count,  # Fix: Don't over-retrieve
                 min_significance=self.min_significance - 2.0  # Lower threshold initially
             )
 
@@ -79,6 +80,13 @@ class MemoryRetriever:
                 )
                 all_memories.append((content, metadata, relevance))
 
+            # Track seen memory IDs to avoid duplicates
+            seen_memory_ids = set()
+            for content, metadata, relevance in all_memories:
+                memory_id = metadata.get('memory_id')
+                if memory_id:
+                    seen_memory_ids.add(memory_id)
+
             # 2. Location-based memories - Get memories from current location
             current_location = context.get('current_location')
             if current_location:
@@ -88,8 +96,9 @@ class MemoryRetriever:
                 )
 
                 for content, metadata, similarity in location_results:
-                    # Check if already in results
-                    if not any(mem[0] == content for mem in all_memories):
+                    # Fix: Check by memory_id instead of content
+                    memory_id = metadata.get('memory_id')
+                    if not memory_id or memory_id not in seen_memory_ids:
                         relevance = self._calculate_relevance(
                             similarity=similarity,
                             metadata=metadata,
@@ -97,6 +106,8 @@ class MemoryRetriever:
                             location_bonus=0.2
                         )
                         all_memories.append((content, metadata, relevance))
+                        if memory_id:
+                            seen_memory_ids.add(memory_id)
 
             # 3. Emotional context - Get memories with similar emotions
             primary_emotion = context.get('primary_emotion')
@@ -107,7 +118,9 @@ class MemoryRetriever:
                 )
 
                 for content, metadata, similarity in emotion_results:
-                    if not any(mem[0] == content for mem in all_memories):
+                    # Fix: Check by memory_id instead of content
+                    memory_id = metadata.get('memory_id')
+                    if not memory_id or memory_id not in seen_memory_ids:
                         relevance = self._calculate_relevance(
                             similarity=similarity,
                             metadata=metadata,
@@ -115,6 +128,8 @@ class MemoryRetriever:
                             emotion_bonus=0.15
                         )
                         all_memories.append((content, metadata, relevance))
+                        if memory_id:
+                            seen_memory_ids.add(memory_id)
 
             # Sort by relevance score
             all_memories.sort(key=lambda x: x[2], reverse=True)
