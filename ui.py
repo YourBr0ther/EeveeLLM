@@ -206,29 +206,76 @@ class TerminalUI:
     def print_help(self):
         """Print help message"""
         help_text = """
-Available Commands:
-  talk [message]        - Speak to Eevee
-  observe               - See what Eevee is currently doing
+╔══════════════════════════════════════════════════════════════════════╗
+║                    EeveeLLM - Available Commands                     ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+💡 TIP: You can use NATURAL LANGUAGE! No need for exact commands.
+   Examples: "How are you?" "What do you have?" "Let's go to the meadow"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 CHECK STATUS
   stats                 - View Eevee's current state
+  💬 Try: "How are you?" "Are you okay?" "What's your energy level?"
+
+👀 OBSERVE
+  observe               - See what Eevee is currently doing
+  💬 Try: "What are you doing?" "What's happening?"
+
+🗺️  WORLD & TRAVEL
   world                 - See current location and surroundings
-  pet                   - Pet Eevee
-  play                  - Initiate playtime
-  give [item]           - Give Eevee an item
-  use [item]            - Use an item from inventory (Phase 5)
-  inventory             - View Eevee's inventory (Phase 5)
-  drop [item]           - Drop/remove an item from inventory (Phase 5)
+  💬 Try: "Where are we?" "Look around"
+
   go [location]         - Travel to a connected location
-  remember [query]      - Browse Eevee's memories (Phase 3)
-  timeline              - View recent autonomous activities (Phase 4)
+  💬 Try: "Let's go to the meadow" "Take me to the forest"
+
+🤝 INTERACT
+  pet                   - Pet Eevee
+  💬 Try: "I want to pet you" "Can I pet you?" "Head pat"
+
+  play                  - Initiate playtime
+  💬 Try: "Let's play!" "Want to play?" "Feel like playing?"
+
+  talk [message]        - Speak to Eevee (or just type naturally!)
+  💬 Try: "Hello Eevee!" "You're so cute!" "I love you"
+
+🎒 INVENTORY & ITEMS
+  inventory             - View Eevee's inventory
+  💬 Try: "What do you have?" "Show me your stuff"
+
+  give [item]           - Give Eevee an item
+  💬 Try: "Here's an Oran Berry" "Take this Potion"
+
+  use [item]            - Use an item from inventory
+  💬 Try: "Use the Oran Berry" "Let's use a Potion"
+
+  drop [item]           - Drop/remove an item from inventory
+  💬 Try: "Drop the stick" "Get rid of the trash"
+
+🧠 MEMORY & TIME
+  remember [query]      - Browse Eevee's memories
+  💬 Try: "Do you remember the park?" "Show me your memories"
+
+  timeline              - View recent autonomous activities
+  💬 Try: "What did you do?" "What have you been up to?"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️  SYSTEM
   help                  - Show this help message
   exit / quit           - Save and quit
 
-Debug Commands:
+🐛 DEBUG COMMANDS
   debug on/off          - Toggle full debug mode
   debug brain           - Toggle brain council visualization
   debug memory          - Toggle memory retrieval visualization
   debug state           - Show detailed state
-  debug time [hours]    - Simulate time passage for testing (Phase 4)
+  debug time [hours]    - Simulate time passage for testing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 For more examples, see: NATURAL_LANGUAGE_COMMANDS.md
         """
         print(help_text)
 
