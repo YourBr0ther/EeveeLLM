@@ -129,10 +129,12 @@ class EeveeLLM:
                 )
 
                 # Apply net state changes
-                self.eevee_state.hunger = max(0, min(100, self.eevee_state.hunger + net_changes['hunger']))
-                self.eevee_state.energy = max(0, min(100, self.eevee_state.energy + net_changes['energy']))
-                self.eevee_state.happiness = max(0, min(100, self.eevee_state.happiness + net_changes['happiness']))
-                self.eevee_state.health = max(0, min(100, self.eevee_state.health + net_changes['health']))
+                self.eevee_state.update_physical_state(
+                    hunger=max(0, min(100, self.eevee_state.hunger + net_changes['hunger'])),
+                    energy=max(0, min(100, self.eevee_state.energy + net_changes['energy'])),
+                    happiness=max(0, min(100, self.eevee_state.happiness + net_changes['happiness'])),
+                    health=max(0, min(100, self.eevee_state.health + net_changes['health']))
+                )
 
                 # Generate timeline summary
                 timeline_summary = self.time_simulator.generate_timeline_summary(
@@ -675,10 +677,12 @@ class EeveeLLM:
             )
 
             # Apply state changes
-            self.eevee_state.hunger = max(0, min(100, self.eevee_state.hunger + net_changes['hunger']))
-            self.eevee_state.energy = max(0, min(100, self.eevee_state.energy + net_changes['energy']))
-            self.eevee_state.happiness = max(0, min(100, self.eevee_state.happiness + net_changes['happiness']))
-            self.eevee_state.health = max(0, min(100, self.eevee_state.health + net_changes['health']))
+            self.eevee_state.update_physical_state(
+                hunger=max(0, min(100, self.eevee_state.hunger + net_changes['hunger'])),
+                energy=max(0, min(100, self.eevee_state.energy + net_changes['energy'])),
+                happiness=max(0, min(100, self.eevee_state.happiness + net_changes['happiness'])),
+                health=max(0, min(100, self.eevee_state.health + net_changes['health']))
+            )
 
             # Generate and display timeline
             timeline_summary = self.time_simulator.generate_timeline_summary(
