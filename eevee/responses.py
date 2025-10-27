@@ -94,13 +94,15 @@ class ResponseGenerator:
             return ("*Eevee tilts head* Vee? *seems confused*", None)
 
     def generate_greeting(self, time_since_last: float,
-                         context: Dict[str, Any]) -> str:
+                         context: Dict[str, Any],
+                         timeline_summary: Optional[str] = None) -> str:
         """
         Generate greeting based on time elapsed
 
         Args:
             time_since_last: Hours since last interaction
             context: Current state context
+            timeline_summary: Optional timeline of activities during absence
 
         Returns:
             Greeting message
@@ -108,23 +110,31 @@ class ResponseGenerator:
         state = context.get('physical_state', {})
         happiness = state.get('happiness', 50)
 
+        greeting = ""
+
         if time_since_last < 0.1:  # Just saw them
-            return "*Eevee looks up at you* Vee? *tilts head curiously*"
+            greeting = "*Eevee looks up at you* Vee? *tilts head curiously*"
 
         elif time_since_last < 2:  # Within a couple hours
-            return "*Eevee perks up* Vee! *tail wagging*"
+            greeting = "*Eevee perks up* Vee! *tail wagging*"
 
         elif time_since_last < 12:  # Same day
             if happiness > 70:
-                return "*Eevee bounds towards you excitedly* Veevee! *jumps up happily*"
+                greeting = "*Eevee bounds towards you excitedly* Veevee! *jumps up happily*"
             else:
-                return "*Eevee walks over slowly* Vee... *nuzzles your hand*"
+                greeting = "*Eevee walks over slowly* Vee... *nuzzles your hand*"
 
         elif time_since_last < 48:  # 1-2 days
-            return "*Eevee SPRINTS towards you* VEE! VEEVEE! *tackles you with enthusiasm, licking your face*"
+            greeting = "*Eevee SPRINTS towards you* VEE! VEEVEE! *tackles you with enthusiasm, licking your face*"
 
         else:  # Multiple days
-            return "*Eevee stands frozen for a moment, ears perked up* ...VEE!! *RACES towards you at full speed, crying with joy* VEEVEE!! *nuzzles you desperately, tail wagging so hard their whole body shakes*"
+            greeting = "*Eevee stands frozen for a moment, ears perked up* ...VEE!! *RACES towards you at full speed, crying with joy* VEEVEE!! *nuzzles you desperately, tail wagging so hard their whole body shakes*"
+
+        # Add timeline if provided
+        if timeline_summary:
+            greeting = greeting + "\n\n" + timeline_summary
+
+        return greeting
 
     def describe_action(self, action: str, context: Dict[str, Any]) -> str:
         """

@@ -166,6 +166,7 @@ Available Commands:
   give [item]           - Give Eevee an item
   go [location]         - Travel to a connected location
   remember [query]      - Browse Eevee's memories (Phase 3)
+  timeline              - View recent autonomous activities (Phase 4)
   help                  - Show this help message
   exit / quit           - Save and quit
 
@@ -174,6 +175,7 @@ Debug Commands:
   debug brain           - Toggle brain council visualization
   debug memory          - Toggle memory retrieval visualization
   debug state           - Show detailed state
+  debug time [hours]    - Simulate time passage for testing (Phase 4)
         """
         print(help_text)
 

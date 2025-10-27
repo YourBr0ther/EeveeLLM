@@ -19,6 +19,10 @@ from ui import TerminalUI
 # Phase 3: Memory system
 from memory import VectorMemoryStore, MemoryRetriever, MemoryConsolidator
 
+# Phase 4: Time passage system
+from world.activities import ActivityGenerator
+from world.time_simulation import TimeSimulator
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO if Config.VERBOSE_LOGGING else logging.WARNING,
@@ -39,6 +43,7 @@ class EeveeLLM:
         self.response_gen = ResponseGenerator(self.llm_client)
         self.debug_mode = Config.DEBUG_MODE
         self.running = True
+        self.last_timeline = None  # Phase 4: Store last timeline for replay
 
         # Phase 3: Initialize memory system
         try:
@@ -67,18 +72,89 @@ class EeveeLLM:
             self.memory_retriever = None
             self.memory_consolidator = None
 
+        # Phase 4: Initialize time passage system
+        try:
+            # Build personality traits dict
+            personality_traits = {
+                'curiosity': self.personality.curiosity,
+                'bravery': self.personality.bravery,
+                'playfulness': self.personality.playfulness,
+                'loyalty': self.personality.loyalty,
+                'independence': self.personality.independence
+            }
+
+            self.activity_generator = ActivityGenerator(
+                personality=personality_traits,
+                world_map=self.world
+            )
+            self.time_simulator = TimeSimulator(
+                activity_generator=self.activity_generator,
+                memory_consolidator=self.memory_consolidator,
+                config=Config.__dict__
+            )
+            logger.info("Phase 4 time simulation system initialized successfully")
+        except Exception as e:
+            logger.warning(f"Time simulation initialization failed: {e}")
+            self.activity_generator = None
+            self.time_simulator = None
+
     def start(self):
         """Start the application"""
         self.ui.clear_screen()
         self.ui.print_welcome()
 
-        # Show greeting based on time since last interaction
+        # Phase 4: Handle time passage if user was away
         time_since = self.eevee_state.get_time_since_last_interaction()
+        timeline_summary = None
+
+        if time_since >= 2.0 and self.time_simulator:
+            # Simulate autonomous activities
+            try:
+                logger.info(f"Running time simulation for {time_since:.1f} hours")
+
+                # Get current state before simulation
+                state_dict = {
+                    'hunger': self.eevee_state.hunger,
+                    'energy': self.eevee_state.energy,
+                    'happiness': self.eevee_state.happiness,
+                    'health': self.eevee_state.health,
+                    'hours_since_trainer': time_since
+                }
+
+                # Run simulation
+                activities, net_changes, memories = self.time_simulator.simulate_time_passage(
+                    state=state_dict,
+                    hours_elapsed=time_since,
+                    last_location=self.eevee_state.location
+                )
+
+                # Apply net state changes
+                self.eevee_state.hunger = max(0, min(100, self.eevee_state.hunger + net_changes['hunger']))
+                self.eevee_state.energy = max(0, min(100, self.eevee_state.energy + net_changes['energy']))
+                self.eevee_state.happiness = max(0, min(100, self.eevee_state.happiness + net_changes['happiness']))
+                self.eevee_state.health = max(0, min(100, self.eevee_state.health + net_changes['health']))
+
+                # Generate timeline summary
+                timeline_summary = self.time_simulator.generate_timeline_summary(
+                    activities=activities,
+                    hours_elapsed=time_since
+                )
+
+                # Store timeline for 'timeline' command
+                self.last_timeline = timeline_summary
+
+                logger.info(f"Time simulation complete: {len(activities)} activities, {len(memories)} memories")
+
+            except Exception as e:
+                logger.error(f"Error during time simulation: {e}", exc_info=True)
+                timeline_summary = None
+
+        # Show current scene
         self._show_scene()
 
-        # Generate greeting
+        # Generate greeting (with timeline if available)
         context = self._build_context()
-        greeting = self.response_gen.generate_greeting(time_since, context)
+        greeting = self.response_gen.generate_greeting(time_since, context, timeline_summary)
         self.ui.print_eevee_response(greeting)
 
         # Main loop
@@ -158,6 +234,10 @@ class EeveeLLM:
         elif command == "remember":
             # Phase 3: Memory browser command
             self.browse_memories(args)
+
+        elif command == "timeline":
+            # Phase 4: Timeline viewer command
+            self.show_timeline()
 
         else:
             # Treat unrecognized input as talking to Eevee
@@ -385,8 +465,15 @@ class EeveeLLM:
             Config.SHOW_MEMORY_RETRIEVAL = not Config.SHOW_MEMORY_RETRIEVAL
             status = "enabled" if Config.SHOW_MEMORY_RETRIEVAL else "disabled"
             self.ui.print_system_message(f"Memory retrieval visualization {status}")
+        elif args.startswith("time "):
+            # Phase 4: Simulate time passage for testing
+            try:
+                hours = float(args.split()[1])
+                self.simulate_time_for_debug(hours)
+            except (ValueError, IndexError):
+                self.ui.print_message("Usage: debug time <hours>")
         else:
-            self.ui.print_message("Debug commands: on, off, brain, state, memory")
+            self.ui.print_message("Debug commands: on, off, brain, state, memory, time <hours>")
 
     def browse_memories(self, query: str):
         """
@@ -542,6 +629,78 @@ class EeveeLLM:
 
         except Exception as e:
             logger.error(f"Error forming memory: {e}")
+
+    def show_timeline(self):
+        """
+        Phase 4: Show recent autonomous activities
+        """
+        if not hasattr(self, 'last_timeline') or not self.last_timeline:
+            self.ui.print_message("No recent timeline available. Come back after being away for a while!")
+            return
+
+        self.ui.print_message(self.last_timeline)
+
+    def simulate_time_for_debug(self, hours: float):
+        """
+        Phase 4: Simulate time passage for testing purposes
+
+        Args:
+            hours: Number of hours to simulate
+        """
+        if not self.time_simulator:
+            self.ui.print_message("Time simulation system not available")
+            return
+
+        if hours <= 0 or hours > 168:
+            self.ui.print_message("Please specify hours between 0 and 168 (1 week)")
+            return
+
+        try:
+            self.ui.print_system_message(f"Simulating {hours:.1f} hours of time passage...")
+
+            # Get current state
+            state_dict = {
+                'hunger': self.eevee_state.hunger,
+                'energy': self.eevee_state.energy,
+                'happiness': self.eevee_state.happiness,
+                'health': self.eevee_state.health,
+                'hours_since_trainer': hours
+            }
+
+            # Run simulation
+            activities, net_changes, memories = self.time_simulator.simulate_time_passage(
+                state=state_dict,
+                hours_elapsed=hours,
+                last_location=self.eevee_state.location
+            )
+
+            # Apply state changes
+            self.eevee_state.hunger = max(0, min(100, self.eevee_state.hunger + net_changes['hunger']))
+            self.eevee_state.energy = max(0, min(100, self.eevee_state.energy + net_changes['energy']))
+            self.eevee_state.happiness = max(0, min(100, self.eevee_state.happiness + net_changes['happiness']))
+            self.eevee_state.health = max(0, min(100, self.eevee_state.health + net_changes['health']))
+
+            # Generate and display timeline
+            timeline_summary = self.time_simulator.generate_timeline_summary(
+                activities=activities,
+                hours_elapsed=hours
+            )
+
+            # Store for 'timeline' command
+            self.last_timeline = timeline_summary
+
+            # Display
+            print(timeline_summary)
+            self.ui.print_system_message(
+                f"Simulation complete: {len(activities)} activities, {len(memories)} memories formed"
+            )
+
+            # Show updated stats
+            self.show_stats()
+
+        except Exception as e:
+            logger.error(f"Error during debug time simulation: {e}", exc_info=True)
+            self.ui.print_error(f"Time simulation failed: {e}")
 
     def shutdown(self):
         """Save and shutdown"""

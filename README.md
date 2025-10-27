@@ -8,7 +8,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 
 ## Features
 
-### Currently Implemented (Phases 1-3)
+### Currently Implemented (Phases 1-4)
 
 **Phase 1: Foundation** ✅
 - ✅ Interactive terminal interface with color support
@@ -30,7 +30,7 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Debug Visualization**: See internal deliberation with `debug brain` command
 - ✅ **Context-Aware Decisions**: Responses reflect brain council's reasoning and emotional state
 
-**Phase 3: Memory System** ✅ NEW!
+**Phase 3: Memory System** ✅
 - ✅ **Vector Memory Storage**: ChromaDB with semantic similarity search
 - ✅ **4 Memory Types**: Episodic (events), Semantic (facts), Emotional (associations), Procedural (learned behaviors)
 - ✅ **Significance-Based Formation**: Only meaningful interactions (>6.0/10) become long-term memories
@@ -40,11 +40,23 @@ An AI-powered Eevee companion with realistic brain processes, autonomous behavio
 - ✅ **Automatic Strengthening**: Frequently accessed memories become stronger
 - ✅ **Integrated with Brain Council**: Memories directly influence Hippocampus decisions
 
-### Coming Soon (Phases 4-5)
-- 🔜 Autonomous time passage simulation (Phase 4)
-- 🔜 Activity generation during time gaps (Phase 4)
-- 🔜 Random world events and surprises (Phase 5)
-- 🔜 Evolution system (Phase 5)
+**Phase 4: Time Passage System** ✅ NEW!
+- ✅ **Autonomous Activities**: Eevee performs 7 types of activities while you're away (needs, exploration, social, survival, emotional, play, rest)
+- ✅ **32+ Activity Templates**: Realistic scenarios with state changes and emotional context
+- ✅ **Personality-Driven Behavior**: Curiosity drives exploration, playfulness drives play
+- ✅ **State Decay Simulation**: Hunger increases, energy decreases realistically over time
+- ✅ **Emotional Loneliness**: Eevee misses you after 24+ hours, creates memories of waiting
+- ✅ **Timeline Generation**: Beautiful summaries of what happened while you were away
+- ✅ **Memory Formation**: Significant autonomous activities (>7.0/10) become long-term memories
+- ✅ **Timeline Command**: Review recent activities with `timeline` command
+- ✅ **Debug Testing**: Simulate time passage with `debug time <hours>` command
+
+### Coming Soon (Phase 5)
+- 🔜 Random world events and surprises
+- 🔜 NPC encounters and social dynamics
+- 🔜 Item discovery during exploration
+- 🔜 Evolution system
+- 🔜 Skill development through practice
 
 ## Installation
 
@@ -98,10 +110,12 @@ The app works in **fallback mode** without an API key! But for full AI responses
 - `stats` - View detailed stats
 - `world` - See current location and surroundings
 - `go [location]` - Travel to a connected location
-- `remember [query]` - Browse Eevee's memories (NEW in Phase 3!)
+- `remember [query]` - Browse Eevee's memories (Phase 3)
+- `timeline` - View recent autonomous activities (NEW in Phase 4!)
 - `help` - Show all commands
 - `debug brain` - Toggle brain council visualization
-- `debug memory` - Toggle memory formation visualization (NEW!)
+- `debug memory` - Toggle memory formation visualization
+- `debug time [hours]` - Simulate time passage for testing (NEW!)
 - `debug on/off` - Toggle full debug mode
 - `exit` - Save and quit
 
