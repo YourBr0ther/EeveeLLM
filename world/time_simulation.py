@@ -74,7 +74,7 @@ class TimeSimulator:
         state: Dict[str, Any],
         hours_elapsed: float,
         last_location: str
-    ) -> Tuple[List[Activity], Dict[str, int], List[str]]:
+    ) -> Tuple[List[Activity], Dict[str, int], List[str], List[str]]:
         """
         Simulate time passage and generate activities
 
@@ -84,10 +84,10 @@ class TimeSimulator:
             last_location: Last known location
 
         Returns:
-            Tuple of (activities, net_state_changes, memories_formed)
+            Tuple of (activities, net_state_changes, memories_formed, items_found)
         """
         if hours_elapsed <= 0:
-            return [], {}, []
+            return [], {}, [], []
 
         # Cap simulation at max hours to prevent performance issues
         if hours_elapsed > self.max_simulation_hours:
@@ -110,6 +110,7 @@ class TimeSimulator:
         }
 
         memories_formed = []
+        items_found = []  # Phase 5: Track items found during activities
 
         # Generate activities across the time period
         hours_simulated = 0.0
@@ -156,6 +157,10 @@ class TimeSimulator:
 
             # Update hours since trainer (for emotional state)
             current_state['hours_since_trainer'] = hours_elapsed - hours_simulated
+
+            # Phase 5: Check if item was found during this activity
+            if 'found_item' in activity.details:
+                items_found.append(activity.details['found_item'])
 
             # Check if this activity should become a memory
             if activity.significance >= 7.0 and self.memory_consolidator:
@@ -207,8 +212,9 @@ class TimeSimulator:
         logger.info(f"Generated {len(activities)} activities over {hours_elapsed:.1f} hours")
         logger.info(f"Net state changes: {net_changes}")
         logger.info(f"Memories formed: {len(memories_formed)}")
+        logger.info(f"Items found: {len(items_found)}")  # Phase 5
 
-        return activities, net_changes, memories_formed
+        return activities, net_changes, memories_formed, items_found
 
     def _copy_state(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Create a working copy of state for simulation"""

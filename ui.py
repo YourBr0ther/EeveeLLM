@@ -164,6 +164,8 @@ Available Commands:
   pet                   - Pet Eevee
   play                  - Initiate playtime
   give [item]           - Give Eevee an item
+  use [item]            - Use an item from inventory (Phase 5)
+  inventory             - View Eevee's inventory (Phase 5)
   go [location]         - Travel to a connected location
   remember [query]      - Browse Eevee's memories (Phase 3)
   timeline              - View recent autonomous activities (Phase 4)

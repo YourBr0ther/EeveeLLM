@@ -121,8 +121,8 @@ class EeveeLLM:
                     'hours_since_trainer': time_since
                 }
 
-                # Run simulation
-                activities, net_changes, memories = self.time_simulator.simulate_time_passage(
+                # Run simulation (Phase 5: Now returns items_found)
+                activities, net_changes, memories, items_found = self.time_simulator.simulate_time_passage(
                     state=state_dict,
                     hours_elapsed=time_since,
                     last_location=self.eevee_state.location
@@ -135,6 +135,10 @@ class EeveeLLM:
                     happiness=max(0, min(100, self.eevee_state.happiness + net_changes['happiness'])),
                     health=max(0, min(100, self.eevee_state.health + net_changes['health']))
                 )
+
+                # Phase 5: Add found items to inventory
+                for item_id in items_found:
+                    self.eevee_state.add_item(item_id)
 
                 # Generate timeline summary
                 timeline_summary = self.time_simulator.generate_timeline_summary(
@@ -217,6 +221,17 @@ class EeveeLLM:
                 self.give_item(args)
             else:
                 self.ui.print_message("Give what? (e.g., 'give Oran Berry')")
+
+        elif command == "use":
+            # Phase 5: Use item command
+            if args:
+                self.use_item(args)
+            else:
+                self.ui.print_message("Use what? (e.g., 'use Oran Berry')")
+
+        elif command == "inventory":
+            # Phase 5: View inventory
+            self.show_inventory()
 
         elif command == "go":
             if args:
@@ -321,32 +336,101 @@ class EeveeLLM:
         self._update_after_interaction("play", "play", response)
 
     def give_item(self, item: str):
-        """Give item to Eevee"""
+        """Give item to Eevee (Phase 5: Enhanced with item catalog)"""
+        from world.items import ItemManager
+
         self.ui.print_user_input(f"*offers {item}*")
 
-        # Simple item handling
-        if "berry" in item.lower() or "food" in item.lower():
-            context = self._build_context()
-            response, _ = self.response_gen.generate_response(
-                f"The trainer offers me {item}",
-                context,
-                debug=self.debug_mode,
-                world_map=self.world
-            )
-            self.ui.print_eevee_response(response)
+        # Check if this is a catalog item
+        item_def = ItemManager.get_item(item)
+        if not item_def:
+            item_def = ItemManager.get_item_by_name(item)
 
-            # Reduce hunger, increase happiness
+        if item_def:
+            # Known catalog item
+            self.ui.print_eevee_response(
+                f"*Eevee's eyes light up* Vee! *happily accepts the {item_def.name}* {item_def.emoji}"
+            )
+            self.eevee_state.add_item(item_def.id)
             self.eevee_state.update_physical_state(
-                hunger=max(0, self.eevee_state.hunger - 20),
                 happiness=min(100, self.eevee_state.happiness + 5)
             )
-            self.eevee_state.add_item(item)
-
         else:
+            # Unknown item - add anyway
             self.ui.print_eevee_response(f"*Eevee sniffs {item} curiously* Vee?")
             self.eevee_state.add_item(item)
 
-        self._update_after_interaction("give", f"give {item}", f"received {item}")
+    def use_item(self, item: str):
+        """Use an item from inventory (Phase 5)"""
+        self.ui.print_user_input(f"*uses {item}*")
+
+        success, new_state, message = self.eevee_state.use_item(item)
+
+        if success:
+            self.ui.print_eevee_response(message)
+
+            # Show state changes
+            if new_state:
+                changes = []
+                old_state = {
+                    'hunger': new_state['hunger'],
+                    'energy': new_state['energy'],
+                    'happiness': new_state['happiness'],
+                    'health': new_state['health']
+                }
+                # Note: State already applied, just show message
+
+            # Update after interaction
+            self._update_after_interaction("use_item", item, message)
+        else:
+            self.ui.print_message(message)
+
+    def show_inventory(self):
+        """Show Eevee's inventory (Phase 5)"""
+        from world.items import ItemManager
+
+        inventory = self.eevee_state.inventory
+
+        if not inventory:
+            self.ui.print_message("\n📦 Inventory is empty")
+            return
+
+        self.ui.print_message(f"\n📦 Inventory ({len(inventory)} items):")
+        self.ui.print_message("=" * 60)
+
+        # Group items by type
+        items_by_type = {}
+        for item_id in inventory:
+            item_def = ItemManager.get_item(item_id)
+            if item_def:
+                item_type = item_def.item_type.value
+                if item_type not in items_by_type:
+                    items_by_type[item_type] = []
+                items_by_type[item_type].append(item_def)
+            else:
+                # Unknown item
+                if "unknown" not in items_by_type:
+                    items_by_type["unknown"] = []
+                items_by_type["unknown"].append(item_id)
+
+        # Display by category
+        for category, items in sorted(items_by_type.items()):
+            self.ui.print_message(f"\n{category.upper()}:")
+            for item in items:
+                if isinstance(item, str):
+                    # Unknown item
+                    self.ui.print_message(f"  • {item}")
+                else:
+                    # Catalog item
+                    consumable_str = "" if item.consumable else " (Keepsake)"
+                    self.ui.print_message(
+                        f"  {item.emoji} {item.name}{consumable_str}"
+                    )
+                    self.ui.print_message(f"     {item.description}")
+
+        self.ui.print_message("\n" + "=" * 60)
+        self.ui.print_message("Use 'use <item>' to use an item")
+        self.ui.print_message()
 
     def travel_to(self, destination: str):
         """Travel to a location"""
@@ -669,8 +753,8 @@ class EeveeLLM:
                 'hours_since_trainer': hours
             }
 
-            # Run simulation
-            activities, net_changes, memories = self.time_simulator.simulate_time_passage(
+            # Run simulation (Phase 5: Now returns items_found)
+            activities, net_changes, memories, items_found = self.time_simulator.simulate_time_passage(
                 state=state_dict,
                 hours_elapsed=hours,
                 last_location=self.eevee_state.location
@@ -684,6 +768,10 @@ class EeveeLLM:
                 health=max(0, min(100, self.eevee_state.health + net_changes['health']))
             )
 
+            # Phase 5: Add found items to inventory
+            for item_id in items_found:
+                self.eevee_state.add_item(item_id)
+
             # Generate and display timeline
             timeline_summary = self.time_simulator.generate_timeline_summary(
                 activities=activities,
@@ -696,7 +784,7 @@ class EeveeLLM:
             # Display
             print(timeline_summary)
             self.ui.print_system_message(
-                f"Simulation complete: {len(activities)} activities, {len(memories)} memories formed"
+                f"Simulation complete: {len(activities)} activities, {len(memories)} memories formed, {len(items_found)} items found"
             )
 
             # Show updated stats

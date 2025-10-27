@@ -245,6 +245,50 @@ class EeveeState:
         """Check if item is in inventory"""
         return item in self._state['inventory']
 
+    def use_item(self, item_id: str) -> tuple[bool, Optional[Dict[str, int]], str]:
+        """
+        Use an item from inventory (Phase 5)
+
+        Args:
+            item_id: Item ID or name to use
+
+        Returns:
+            Tuple of (success, new_state_values, message)
+        """
+        from world.items import ItemManager
+
+        # Check if item is in inventory
+        if not self.has_item(item_id):
+            return False, None, f"You don't have '{item_id}' in your inventory."
+
+        # Get item definition
+        item = ItemManager.get_item(item_id)
+        if not item:
+            item = ItemManager.get_item_by_name(item_id)
+
+        if not item:
+            return False, None, f"Unknown item: '{item_id}'"
+
+        # Get current state
+        current_state = {
+            'hunger': self.hunger,
+            'energy': self.energy,
+            'happiness': self.happiness,
+            'health': self.health
+        }
+
+        # Use the item
+        new_state, message = item.use(current_state)
+
+        # Apply state changes
+        self.update_physical_state(**new_state)
+
+        # Remove item if consumable
+        if item.consumable:
+            self.remove_item(item_id)
+
+        return True, new_state, message
+
     def get_time_since_last_interaction(self) -> float:
         """Get hours since last interaction"""
         last = datetime.fromisoformat(self._state['last_interaction'])

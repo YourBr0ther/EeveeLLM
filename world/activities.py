@@ -262,7 +262,7 @@ class ActivityGenerator:
         )
 
     def _generate_exploration_activity(self, timestamp: datetime, location: str, bravery: int) -> Activity:
-        """Generate exploration activity"""
+        """Generate exploration activity (Phase 5: Can find items)"""
         desc, loc, h_delta, e_delta, hap_delta, heal_delta, emotion, intensity, sig = random.choice(self.exploration_activities)
 
         # High bravery = more likely to explore dangerous areas
@@ -272,7 +272,41 @@ class ActivityGenerator:
                 a for a in self.exploration_activities if "deep_forest" not in a[1]
             ])
 
-        return Activity(
+        # Phase 5: Chance to find items during exploration (25%)
+        found_item = None
+        if random.random() < 0.25:
+            from world.items import ItemManager, ItemRarity
+
+            # Determine rarity based on location
+            if "deep_forest" in loc or "mountain" in loc:
+                # Dangerous areas = better loot
+                rarity_roll = random.random()
+                if rarity_roll < 0.05:  # 5% very rare
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.VERY_RARE)
+                elif rarity_roll < 0.20:  # 15% rare
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.RARE)
+                elif rarity_roll < 0.50:  # 30% uncommon
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.UNCOMMON)
+                else:  # 50% common
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.COMMON)
+            else:
+                # Safe areas = mostly common items
+                rarity_roll = random.random()
+                if rarity_roll < 0.01:  # 1% very rare
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.VERY_RARE)
+                elif rarity_roll < 0.10:  # 9% rare
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.RARE)
+                elif rarity_roll < 0.30:  # 20% uncommon
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.UNCOMMON)
+                else:  # 70% common
+                    found_item = ItemManager.get_random_item_by_rarity(ItemRarity.COMMON)
+
+            if found_item:
+                desc = f"{desc} - Found {found_item.emoji} {found_item.name}!"
+                hap_delta += 10  # Extra happiness from discovery
+                sig = max(sig, 6.5)  # Finding items is somewhat memorable
+
+        activity = Activity(
             timestamp=timestamp,
             activity_type=ActivityType.EXPLORATION,
             description=desc,
@@ -285,6 +319,12 @@ class ActivityGenerator:
             emotion_intensity=intensity,
             significance=sig
         )
+
+        # Store found item in details
+        if found_item:
+            activity.details['found_item'] = found_item.id
+
+        return activity
 
     def _generate_play_activity(self, timestamp: datetime, location: str, energy: int) -> Activity:
         """Generate play activity"""
