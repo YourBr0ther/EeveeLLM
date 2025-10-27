@@ -512,6 +512,22 @@ class EeveeLLM:
             self.ui.print_message("Use 'use <item>' to use an item")
             self.ui.print_message("")  # Empty line
 
+            # Eevee reacts to showing inventory
+            try:
+                context = self._build_context()
+                item_count = len(inventory)
+                response, _ = self.response_gen.generate_response(
+                    f"The trainer is looking at my {item_count} item{'s' if item_count != 1 else ''}",
+                    context,
+                    debug=self.debug_mode,
+                    world_map=self.world
+                )
+                self.ui.print_eevee_response(response)
+
+                self._update_after_interaction("inventory", "check inventory", response)
+            except Exception as e:
+                logger.error(f"Error generating inventory response: {e}")
+
         except Exception as e:
             logger.error(f"Error showing inventory: {e}", exc_info=True)
             self.ui.print_error(f"Failed to show inventory: {e}")
@@ -655,12 +671,42 @@ class EeveeLLM:
         print(f"\nInteractions: {state._state['total_interactions']}")
         print("=" * 60 + "\n")
 
+        # Eevee reacts to being checked
+        try:
+            context = self._build_context()
+            response, _ = self.response_gen.generate_response(
+                "The trainer is checking how I'm doing",
+                context,
+                debug=self.debug_mode,
+                world_map=self.world
+            )
+            self.ui.print_eevee_response(response)
+
+            self._update_after_interaction("stats", "check stats", response)
+        except Exception as e:
+            logger.error(f"Error generating stats response: {e}")
+
     def show_world(self):
-        """Show world/location info"""
+        """Show world/location info with Eevee's perspective"""
         location = self.world.get_location(self.eevee_state.location)
         if location:
             description = self.world.describe_location(location.id)
             self.ui.print_location_description(description)
+
+            # Eevee comments on the surroundings
+            try:
+                context = self._build_context()
+                response, _ = self.response_gen.generate_response(
+                    f"Looking around {location.name}",
+                    context,
+                    debug=self.debug_mode,
+                    world_map=self.world
+                )
+                self.ui.print_eevee_response(response)
+
+                self._update_after_interaction("world", "look around", response)
+            except Exception as e:
+                logger.error(f"Error generating world response: {e}")
 
     def handle_debug_command(self, args: str):
         """Handle debug commands"""
