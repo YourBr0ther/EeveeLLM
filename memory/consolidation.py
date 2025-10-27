@@ -214,6 +214,16 @@ class MemoryConsolidator:
         if 'give' in user_input.lower() or 'gift' in user_input.lower():
             significance += 1.5
 
+        # Factor 9: Explicit memory requests (FIX: "remember" keyword)
+        memory_keywords = ['remember', 'memorize', 'don\'t forget', 'keep in mind', 'note that']
+        if any(word in user_input.lower() for word in memory_keywords):
+            significance += 2.0  # User explicitly asking to remember = very significant
+
+        # Factor 10: Sharing personal information (favorite, prefer, like, dislike)
+        personal_info_keywords = ['favorite', 'prefer', 'like', 'dislike', 'love', 'hate', 'my name']
+        if any(word in user_input.lower() for word in personal_info_keywords):
+            significance += 1.5  # Personal preferences are significant
+
         # Cap at 10.0
         return min(10.0, significance)
 
@@ -313,11 +323,64 @@ class MemoryConsolidator:
         Returns:
             SemanticMemory or None
         """
+        # FIX: Check for explicit fact-sharing (favorite, prefer, name, etc.)
+        input_lower = user_input.lower()
+
+        # Pattern 1: "My favorite X is Y" or "I like X" or "I prefer Y"
+        if 'favorite' in input_lower or 'prefer' in input_lower:
+            # Extract the fact as-is
+            # User said something like "My favorite color is green"
+            fact = user_input.strip()
+            fact_category = "trainer_preference"
+
+            return SemanticMemory(
+                memory_id=str(uuid.uuid4()),
+                memory_type=MemoryType.SEMANTIC,
+                content=f"Trainer fact: {fact}",
+                timestamp=datetime.now(),
+                significance=significance,  # Keep full significance for trainer facts
+                tags=["fact", "trainer", "preference"],
+                fact_category=fact_category,
+                confidence=0.95,  # High confidence - directly stated
+                evidence_count=1
+            )
+
+        # Pattern 2: "My name is X" or "I'm called Y"
+        if 'my name is' in input_lower or 'i\'m called' in input_lower or 'call me' in input_lower:
+            fact = user_input.strip()
+            return SemanticMemory(
+                memory_id=str(uuid.uuid4()),
+                memory_type=MemoryType.SEMANTIC,
+                content=f"Trainer fact: {fact}",
+                timestamp=datetime.now(),
+                significance=significance,
+                tags=["fact", "trainer", "name"],
+                fact_category="trainer_identity",
+                confidence=0.95,
+                evidence_count=1
+            )
+
+        # Pattern 3: "I like X" or "I love Y" or "I dislike Z"
+        if ('i like' in input_lower or 'i love' in input_lower or
+            'i dislike' in input_lower or 'i hate' in input_lower):
+            fact = user_input.strip()
+            return SemanticMemory(
+                memory_id=str(uuid.uuid4()),
+                memory_type=MemoryType.SEMANTIC,
+                content=f"Trainer fact: {fact}",
+                timestamp=datetime.now(),
+                significance=significance,
+                tags=["fact", "trainer", "preference"],
+                fact_category="trainer_preference",
+                confidence=0.9,
+                evidence_count=1
+            )
+
         # Look for fact-learning opportunities
         location = context.get('current_location', '')
 
         # Example: Learning about locations
-        if 'safe' in user_input.lower() or 'danger' in user_input.lower():
+        if 'safe' in input_lower or 'danger' in input_lower:
             location_safety = context.get('location_safety', 10)
 
             if location_safety < 5:
@@ -341,7 +404,7 @@ class MemoryConsolidator:
             )
 
         # Example: Learning about items
-        if 'berry' in user_input.lower() and 'health' in user_input.lower():
+        if 'berry' in input_lower and 'health' in input_lower:
             return SemanticMemory(
                 memory_id=str(uuid.uuid4()),
                 memory_type=MemoryType.SEMANTIC,
