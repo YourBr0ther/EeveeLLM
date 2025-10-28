@@ -104,14 +104,8 @@ class EeveeLLM:
 
         # Phase 4: Initialize time passage system
         try:
-            # Build personality traits dict
-            personality_traits = {
-                'curiosity': self.personality.curiosity,
-                'bravery': self.personality.bravery,
-                'playfulness': self.personality.playfulness,
-                'loyalty': self.personality.loyalty,
-                'independence': self.personality.independence
-            }
+            # Build personality traits dict using to_dict() method
+            personality_traits = self.personality.to_dict()
 
             self.activity_generator = ActivityGenerator(
                 personality=personality_traits,
@@ -149,6 +143,14 @@ class EeveeLLM:
             # Simulate autonomous activities
             try:
                 logger.info(f"Running time simulation for {time_since:.1f} hours")
+
+                # Inform user if simulation will be capped
+                max_sim_hours = 168  # 7 days (matches time_simulation.py)
+                if time_since > max_sim_hours:
+                    self.ui.print_system_message(
+                        f"Note: You were away for {time_since:.1f} hours ({time_since/24:.1f} days). "
+                        f"Simulating the last {max_sim_hours} hours ({max_sim_hours/24:.0f} days) for performance."
+                    )
 
                 # Get current state before simulation
                 state_dict = {

@@ -66,10 +66,12 @@ class MemoryRetriever:
 
             # 1. Semantic search - Find memories similar to current situation
             # Optimization: Request exact amount needed instead of 2x
+            # Note: We retrieve memories with significance >= 4.0 (storage threshold is 6.0)
+            # This allows retrieving slightly less significant memories for additional context
             semantic_results = self.vector_store.retrieve_similar(
                 query=situation,
                 n_results=self.memory_retrieval_count,  # Fix: Don't over-retrieve
-                min_significance=self.min_significance - 2.0  # Lower threshold initially
+                min_significance=self.min_significance - 2.0  # Retrieve threshold: 6.0 - 2.0 = 4.0
             )
 
             for content, metadata, similarity in semantic_results:
