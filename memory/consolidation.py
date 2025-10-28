@@ -220,9 +220,9 @@ class MemoryConsolidator:
             significance += 2.0  # User explicitly asking to remember = very significant
 
         # Factor 10: Sharing personal information (favorite, prefer, like, dislike)
-        personal_info_keywords = ['favorite', 'prefer', 'like', 'dislike', 'love', 'hate', 'my name']
+        personal_info_keywords = ['favorite', 'prefer', 'like', 'dislike', 'love', 'hate', 'my name', 'call me', 'i\'m called', 'i am called']
         if any(word in user_input.lower() for word in personal_info_keywords):
-            significance += 1.5  # Personal preferences are significant
+            significance += 1.5  # Personal preferences and identity are significant
 
         # Cap at 10.0
         return min(10.0, significance)
