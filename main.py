@@ -180,14 +180,13 @@ class EeveeLLM:
                 for item_id in items_found:
                     self.eevee_state.add_item(item_id)
 
-                # Generate timeline summary
-                timeline_summary = self.time_simulator.generate_timeline_summary(
-                    activities=activities,
-                    hours_elapsed=time_since
-                )
-
-                # Store timeline for 'timeline' command
-                self.last_timeline = timeline_summary
+                # Store timeline data for 'timeline' command (both summary and detail)
+                self.last_timeline_data = {
+                    'activities': activities,
+                    'hours_elapsed': time_since,
+                    'net_changes': net_changes,
+                    'items_found': items_found
+                }
 
                 logger.info(f"Time simulation complete: {len(activities)} activities, {len(memories)} memories")
 
@@ -253,7 +252,8 @@ class EeveeLLM:
             self.running = False
 
         elif command == "help":
-            self.ui.print_help()
+            # Categorized help system
+            self.ui.print_help(category=args if args else None)
 
         elif command == "stats":
             self.show_stats()
@@ -315,8 +315,9 @@ class EeveeLLM:
             self.browse_memories(args)
 
         elif command == "timeline":
-            # Phase 4: Timeline viewer command
-            self.show_timeline()
+            # Phase 4: Timeline viewer command (summary by default, detailed if args)
+            detailed = args and "detail" in args.lower()
+            self.show_timeline(detailed=detailed)
 
         else:
             # Treat unrecognized input as talking to Eevee
@@ -861,15 +862,32 @@ class EeveeLLM:
         except Exception as e:
             logger.error(f"Error forming memory: {e}")
 
-    def show_timeline(self):
+    def show_timeline(self, detailed: bool = False):
         """
-        Phase 4: Show recent autonomous activities
+        Show recent autonomous activities.
+
+        Args:
+            detailed: If True, show detailed view with all activities
         """
-        if not hasattr(self, 'last_timeline') or not self.last_timeline:
-            self.ui.print_message("No recent timeline available. Come back after being away for a while!")
+        if not hasattr(self, 'last_timeline_data') or not self.last_timeline_data:
+            self.ui.print_info("No recent timeline available.\n💡 Come back after being away for a while!")
             return
 
-        self.ui.print_message(self.last_timeline)
+        data = self.last_timeline_data
+
+        # Use summary or detailed view
+        if detailed:
+            self.ui.print_timeline_detail(
+                activities=data['activities'],
+                hours_elapsed=data['hours_elapsed']
+            )
+        else:
+            self.ui.print_timeline_summary(
+                activities=data['activities'],
+                hours_elapsed=data['hours_elapsed'],
+                net_changes=data['net_changes'],
+                items_found=data['items_found']
+            )
 
     def simulate_time_for_debug(self, hours: float):
         """

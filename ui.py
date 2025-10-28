@@ -203,81 +203,189 @@ class TerminalUI:
         except (EOFError, KeyboardInterrupt):
             return "exit"
 
-    def print_help(self):
-        """Print help message"""
-        help_text = """
+    def print_help(self, category: str = None):
+        """
+        Print help message - categorized for easier navigation.
+
+        Args:
+            category: Optional category to show (basic, world, items, memory, all)
+        """
+        if not category or category == "all":
+            # Show main help with category list
+            help_text = """
 ╔══════════════════════════════════════════════════════════════════════╗
-║                    EeveeLLM - Available Commands                     ║
+║                        EEVEE COMMAND HELP                            ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-💡 TIP: You can use NATURAL LANGUAGE! No need for exact commands.
-   Examples: "How are you?" "What do you have?" "Let's go to the meadow"
+💡 TIP: Talk naturally! "How are you?" works just like 'stats'
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 HELP CATEGORIES (Type 'help <category>' for details):
+   • basic    - Essential commands to get started
+   • world    - Exploration and travel
+   • items    - Inventory and item management
+   • memory   - Viewing and searching memories
+   • debug    - Developer/testing commands
+   • all      - Show everything
+
+🎯 QUICK START:
+   "Hello!"           - Greet Eevee
+   "How are you?"     - Check Eevee's status
+   "Let's play!"      - Play with Eevee
+   "Where are we?"    - See current location
+   "What do you have?" - Check inventory
+
+⚙️  SYSTEM:
+   help               - Show this help message
+   exit / quit        - Save and quit
+
+📖 For 80+ natural language examples, see: NATURAL_LANGUAGE_COMMANDS.md
+            """
+            print(help_text)
+
+        elif category == "basic":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                          BASIC COMMANDS                              ║
+╚══════════════════════════════════════════════════════════════════════╝
 
 📊 CHECK STATUS
-  stats                 - View Eevee's current state
-  💬 Try: "How are you?" "Are you okay?" "What's your energy level?"
+  stats                 - View Eevee's health, energy, happiness, etc.
+  💬 Natural: "How are you?" • "Are you okay?" • "Show me your stats"
 
 👀 OBSERVE
   observe               - See what Eevee is currently doing
-  💬 Try: "What are you doing?" "What's happening?"
-
-🗺️  WORLD & TRAVEL
-  world                 - See current location and surroundings
-  💬 Try: "Where are we?" "Look around"
-
-  go [location]         - Travel to a connected location
-  💬 Try: "Let's go to the meadow" "Take me to the forest"
+  💬 Natural: "What are you doing?" • "What's happening?"
 
 🤝 INTERACT
-  pet                   - Pet Eevee
-  💬 Try: "I want to pet you" "Can I pet you?" "Head pat"
+  pet                   - Pet Eevee (increases happiness and trust)
+  💬 Natural: "I want to pet you" • "Can I pet you?" • "Head pat"
 
-  play                  - Initiate playtime
-  💬 Try: "Let's play!" "Want to play?" "Feel like playing?"
+  play                  - Initiate playtime (increases bond, costs energy)
+  💬 Natural: "Let's play!" • "Want to play?" • "Feel like playing?"
 
   talk [message]        - Speak to Eevee (or just type naturally!)
-  💬 Try: "Hello Eevee!" "You're so cute!" "I love you"
+  💬 Natural: "Hello Eevee!" • "You're so cute!" • "I love you"
 
-🎒 INVENTORY & ITEMS
-  inventory             - View Eevee's inventory
-  💬 Try: "What do you have?" "Show me your stuff"
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
 
+        elif category == "world":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                      WORLD & EXPLORATION                             ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🗺️  VIEW LOCATION
+  world                 - See current location and surroundings
+  💬 Natural: "Where are we?" • "Look around" • "Show me the area"
+
+🚶 TRAVEL
+  go [location]         - Travel to a connected location
+  💬 Natural: "Let's go to the meadow" • "Take me to the forest"
+
+📍 AVAILABLE LOCATIONS:
+  • Trainer's Home      - Safe starting point
+  • Sunny Garden        - Pleasant garden for playing
+  • Wide Meadow         - Open area for running
+  • Clear Stream        - Fresh water and berries
+  • Forest Edge         - Border of the forest
+  • Hidden Den          - Eevee's secret safe space
+  • Sunny Hill          - Napping spot with sunset views
+  • Deep Forest         - Dangerous but exciting woods
+
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
+
+        elif category == "items":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                      INVENTORY & ITEMS                               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🎒 VIEW INVENTORY
+  inventory             - View Eevee's inventory (compact)
+  inventory detail      - View with full item descriptions
+  💬 Natural: "What do you have?" • "Show me your stuff"
+
+🎁 GIVE ITEMS
   give [item]           - Give Eevee an item
-  💬 Try: "Here's an Oran Berry" "Take this Potion"
+  💬 Natural: "Here's an Oran Berry" • "Take this Potion"
 
+⚡ USE ITEMS
   use [item]            - Use an item from inventory
-  💬 Try: "Use the Oran Berry" "Let's use a Potion"
+  💬 Natural: "Use the Oran Berry" • "Let's use a Potion"
 
-  drop [item]           - Drop/remove an item from inventory
-  💬 Try: "Drop the stick" "Get rid of the trash"
+🗑️  DROP ITEMS
+  drop [item]           - Drop/remove an item (asks for confirmation on keepsakes)
+  💬 Natural: "Drop the stick" • "Get rid of the trash"
 
-🧠 MEMORY & TIME
-  remember [query]      - Browse Eevee's memories
-  💬 Try: "Do you remember the park?" "Show me your memories"
+🍊 ITEM TYPES:
+  • Berries      - Restore hunger
+  • Medicine     - Restore health
+  • Toys         - Increase happiness
+  • Treasures    - Rare keepsakes (can't be re-found!)
 
-  timeline              - View recent autonomous activities
-  💬 Try: "What did you do?" "What have you been up to?"
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        elif category == "memory":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                       MEMORY & TIMELINE                              ║
+╚══════════════════════════════════════════════════════════════════════╝
 
-⚙️  SYSTEM
-  help                  - Show this help message
-  exit / quit           - Save and quit
+🧠 SEARCH MEMORIES
+  remember              - Show memory statistics
+  remember [query]      - Search memories for specific topic
+  💬 Natural: "Do you remember the park?" • "Show me your memories"
 
-🐛 DEBUG COMMANDS
-  debug on/off          - Toggle full debug mode
+📖 MEMORY TYPES:
+  • Episodic      - Events and experiences
+  • Semantic      - Facts and knowledge (your name, preferences, etc.)
+  • Emotional     - Feelings and associations
+  • Procedural    - Learned behaviors
+
+📅 VIEW TIMELINE
+  timeline              - View summary of recent activities (compact)
+  timeline detail       - View detailed day-by-day timeline
+  💬 Natural: "What did you do?" • "What have you been up to?"
+
+💡 Eevee remembers significant moments (6.0+/10 significance)
+   Use "remember" keyword for important facts: "Remember, my name is Chris"
+
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
+
+        elif category == "debug":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                          DEBUG COMMANDS                              ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🐛 DEBUGGING TOOLS
+  debug on              - Enable full debug mode
+  debug off             - Disable full debug mode
+
   debug brain           - Toggle brain council visualization
+                         (Shows internal deliberation process)
+
   debug memory          - Toggle memory retrieval visualization
-  debug state           - Show detailed state
+                         (Shows memory formation in real-time)
+
+  debug state           - Show detailed internal state
+
   debug time [hours]    - Simulate time passage for testing
+                         Example: 'debug time 48' simulates 2 days
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  These commands are for developers and testing
 
-📖 For more examples, see: NATURAL_LANGUAGE_COMMANDS.md
-        """
-        print(help_text)
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
 
     def print_welcome(self):
         """Print welcome message"""
@@ -841,3 +949,204 @@ Until next time, trainer!
                     print(f"     {' • '.join(details)}\n")
 
             print()  # Space between types
+
+    def print_timeline_summary(self, activities, hours_elapsed, net_changes, items_found):
+        """
+        Print compact timeline summary (default view).
+
+        Shows key highlights without overwhelming detail.
+
+        Args:
+            activities: List of Activity objects
+            hours_elapsed: Total hours that passed
+            net_changes: Dict of state changes
+            items_found: List of item IDs found
+        """
+        if not activities:
+            self.print_info("No significant activities occurred while you were away.")
+            return
+
+        days = hours_elapsed / 24
+
+        # Header
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days){Style.RESET_ALL}")
+        else:
+            print(f"\n📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days)")
+
+        print("━" * 70 + "\n")
+
+        # Count activities by type
+        activity_counts = {}
+        for activity in activities:
+            activity_type = activity.type
+            activity_counts[activity_type] = activity_counts.get(activity_type, 0) + 1
+
+        # Activity type emojis
+        type_emojis = {
+            'needs': '🍖',
+            'exploration': '🌍',
+            'rest': '😴',
+            'play': '🎮',
+            'emotional': '💙',
+            'social': '👋',
+            'survival': '🛡️'
+        }
+
+        # Show summary
+        if self.use_color:
+            print(f"{Fore.YELLOW}{Style.BRIGHT}While you were away, Eevee:{Style.RESET_ALL}")
+        else:
+            print("While you were away, Eevee:")
+
+        for activity_type, count in sorted(activity_counts.items()):
+            emoji = type_emojis.get(activity_type, '•')
+            type_name = activity_type.replace('_', ' ').title()
+            if self.use_color:
+                print(f"  {emoji} {Style.DIM}{type_name}:{Style.RESET_ALL} {count} time{'s' if count != 1 else ''}")
+            else:
+                print(f"  {emoji} {type_name}: {count} time{'s' if count != 1 else ''}")
+
+        # State changes
+        print()
+        if self.use_color:
+            print(f"{Fore.YELLOW}{Style.BRIGHT}📊 State Changes:{Style.RESET_ALL}")
+        else:
+            print("📊 State Changes:")
+
+        for stat, delta in net_changes.items():
+            if delta == 0:
+                continue
+
+            # Color based on good/bad change
+            if stat == 'hunger':
+                # Hunger increase is bad
+                color = Fore.RED if delta > 0 else Fore.GREEN
+                sign = "+" if delta > 0 else ""
+            else:
+                # Other stats: increase is good
+                color = Fore.GREEN if delta > 0 else Fore.RED
+                sign = "+" if delta > 0 else ""
+
+            if self.use_color:
+                print(f"  {stat.capitalize():12} {color}{sign}{delta:3}{Style.RESET_ALL}")
+            else:
+                print(f"  {stat.capitalize():12} {sign}{delta:3}")
+
+        # Items found
+        if items_found:
+            print()
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}🎁 Items Found:{Style.RESET_ALL}")
+            else:
+                print("🎁 Items Found:")
+
+            from world.items import ItemManager
+            item_counts = {}
+            for item_id in items_found:
+                item_counts[item_id] = item_counts.get(item_id, 0) + 1
+
+            for item_id, count in item_counts.items():
+                item_def = ItemManager.get_item(item_id)
+                if item_def:
+                    qty_str = f" × {count}" if count > 1 else ""
+                    print(f"  {item_def.emoji} {item_def.name}{qty_str}")
+                else:
+                    qty_str = f" × {count}" if count > 1 else ""
+                    print(f"  {item_id}{qty_str}")
+
+        # Memorable moments (significant activities)
+        significant_activities = [a for a in activities if getattr(a, 'significance', 0) > 7.0]
+        if significant_activities:
+            print()
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}💭 Memorable Moments:{Style.RESET_ALL}")
+            else:
+                print("💭 Memorable Moments:")
+
+            # Show top 3 most significant
+            sorted_activities = sorted(significant_activities, key=lambda a: a.significance, reverse=True)
+            for activity in sorted_activities[:3]:
+                if self.use_color:
+                    print(f"  • {Style.DIM}{activity.description}{Style.RESET_ALL}")
+                else:
+                    print(f"  • {activity.description}")
+
+        # Footer
+        print("\n" + "━" * 70)
+        if self.use_color:
+            print(f"{Style.DIM}💡 Type 'timeline detail' to see all activities{Style.RESET_ALL}\n")
+        else:
+            print("💡 Type 'timeline detail' to see all activities\n")
+
+    def print_timeline_detail(self, activities, hours_elapsed):
+        """
+        Print detailed timeline with all activities.
+
+        Args:
+            activities: List of Activity objects
+            hours_elapsed: Total hours that passed
+        """
+        if not activities:
+            self.print_info("No significant activities occurred while you were away.")
+            return
+
+        days = hours_elapsed / 24
+
+        # Header
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}📅 DETAILED TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days){Style.RESET_ALL}")
+        else:
+            print(f"\n📅 DETAILED TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days)")
+
+        print("━" * 70 + "\n")
+
+        # Group by day
+        from datetime import datetime
+        activities_by_day = {}
+        for activity in activities:
+            day_key = activity.timestamp.strftime("%B %d, %Y")  # "October 28, 2025"
+            if day_key not in activities_by_day:
+                activities_by_day[day_key] = []
+            activities_by_day[day_key].append(activity)
+
+        # Print each day
+        for day_key in sorted(activities_by_day.keys()):
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}{day_key}{Style.RESET_ALL}")
+            else:
+                print(day_key)
+
+            day_activities = activities_by_day[day_key]
+
+            for activity in sorted(day_activities, key=lambda a: a.timestamp):
+                time_str = activity.timestamp.strftime("%I:%M %p")
+                significant_marker = "⭐ " if getattr(activity, 'significance', 0) > 7.0 else "   "
+
+                if self.use_color:
+                    print(f"  {significant_marker}{Style.DIM}{time_str}{Style.RESET_ALL} - {activity.description}")
+                else:
+                    print(f"  {significant_marker}{time_str} - {activity.description}")
+
+                # Show state changes if any
+                if hasattr(activity, 'state_changes') and activity.state_changes:
+                    changes = []
+                    for stat, delta in activity.state_changes.items():
+                        if delta != 0:
+                            sign = "+" if delta > 0 else ""
+                            changes.append(f"{stat} {sign}{delta}")
+
+                    if changes:
+                        if self.use_color:
+                            print(f"           {Style.DIM}({', '.join(changes)}){Style.RESET_ALL}")
+                        else:
+                            print(f"           ({', '.join(changes)})")
+
+            print()  # Space between days
+
+        # Footer
+        print("━" * 70)
+        if self.use_color:
+            print(f"{Style.DIM}💡 Type 'timeline' for summary view{Style.RESET_ALL}\n")
+        else:
+            print("💡 Type 'timeline' for summary view\n")
