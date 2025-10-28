@@ -4,11 +4,14 @@ Handles Eevee's physical state, location, inventory, and persistence
 """
 import sqlite3
 import json
+import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
 from config import Config, DATABASE_PATH
+
+logger = logging.getLogger(__name__)
 
 
 class EeveeState:
@@ -290,10 +293,15 @@ class EeveeState:
 
     def get_time_since_last_interaction(self) -> float:
         """Get hours since last interaction"""
-        last = datetime.fromisoformat(self._state['last_interaction'])
-        now = datetime.now()
-        delta = now - last
-        return delta.total_seconds() / 3600
+        try:
+            last = datetime.fromisoformat(self._state['last_interaction'])
+            now = datetime.now()
+            delta = now - last
+            return delta.total_seconds() / 3600
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Error parsing last_interaction timestamp: {e}")
+            # Return 0 hours if we can't parse (safer than crashing)
+            return 0.0
 
     # Property accessors
     @property

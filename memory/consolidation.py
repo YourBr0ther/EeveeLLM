@@ -11,7 +11,7 @@ Following the design specification:
 """
 
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import logging
 
@@ -53,6 +53,7 @@ class MemoryConsolidator:
 
         # Pattern tracking for procedural memory formation
         self.behavior_patterns: Dict[str, List[datetime]] = {}  # behavior -> timestamps
+        self.pattern_retention_days = 30  # Keep pattern data for 30 days
 
     def process_interaction(
         self,
@@ -186,10 +187,10 @@ class MemoryConsolidator:
             significance += 1.5
 
         # Factor 4: Council conflict (low consensus = internal struggle = memorable)
-        if council_decision and hasattr(council_decision, 'consensus'):
-            if council_decision.consensus < 0.3:  # High conflict
+        if council_decision and hasattr(council_decision, 'consensus_level'):
+            if council_decision.consensus_level < 0.3:  # High conflict
                 significance += 1.5
-            elif council_decision.consensus < 0.5:
+            elif council_decision.consensus_level < 0.5:
                 significance += 0.5
 
         # Factor 5: Relationship moments
@@ -514,6 +515,9 @@ class MemoryConsolidator:
 
             self.behavior_patterns[behavior_name].append(datetime.now())
 
+            # Clean up old patterns to prevent unbounded growth
+            self._cleanup_old_patterns()
+
             # Only create procedural memory after seeing pattern 3+ times
             if len(self.behavior_patterns[behavior_name]) >= 3:
                 return ProceduralMemory(
@@ -540,6 +544,9 @@ class MemoryConsolidator:
 
             self.behavior_patterns[behavior_name].append(datetime.now())
 
+            # Clean up old patterns to prevent unbounded growth
+            self._cleanup_old_patterns()
+
             if len(self.behavior_patterns[behavior_name]) >= 3:
                 return ProceduralMemory(
                     memory_id=str(uuid.uuid4()),
@@ -555,6 +562,27 @@ class MemoryConsolidator:
                 )
 
         return None
+
+    def _cleanup_old_patterns(self):
+        """
+        Remove behavior patterns older than retention period.
+
+        Prevents unbounded growth of behavior_patterns dict.
+        Called automatically during pattern detection.
+        """
+        cutoff_time = datetime.now() - timedelta(days=self.pattern_retention_days)
+
+        for behavior_name in list(self.behavior_patterns.keys()):
+            # Filter out old timestamps
+            self.behavior_patterns[behavior_name] = [
+                ts for ts in self.behavior_patterns[behavior_name]
+                if ts > cutoff_time
+            ]
+
+            # Remove the behavior entirely if no recent occurrences
+            if not self.behavior_patterns[behavior_name]:
+                del self.behavior_patterns[behavior_name]
+                logger.debug(f"Removed old behavior pattern: {behavior_name}")
 
     def apply_forgetting(self) -> int:
         """
