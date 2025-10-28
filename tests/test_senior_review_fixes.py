@@ -11,8 +11,8 @@ import sys
 import os
 from datetime import datetime, timedelta
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path (go up from tests/ to project root)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from memory.consolidation import MemoryConsolidator
 from memory.vector_store import VectorMemoryStore
