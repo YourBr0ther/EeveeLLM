@@ -142,8 +142,13 @@ Response:"""
             for i, (content, metadata, relevance) in enumerate(retrieved_memories[:3], 1):  # Top 3 memories
                 memory_context += f"- {content}\n"
 
-        prompt = f"""You are Eevee, a curious and loyal Pokemon companion.
+        # Phase 7.5: Build current session context section
+        session_context = ""
+        if 'current_session' in context and context['current_session']:
+            session_context = f"\n\nCurrent conversation:\n{context['current_session']}\n"
 
+        prompt = f"""You are Eevee, a curious and loyal Pokemon companion.
+{session_context}
 Situation: "{user_input}"
 
 Your internal decision: {decision}

@@ -78,6 +78,10 @@ class EeveeLLM:
         self.running = True
         self.last_timeline = None  # Phase 4: Store last timeline for replay
 
+        # Phase 7.5: Track current session conversation thread
+        self.current_session_messages = []  # List of (user_input, eevee_response) tuples
+        self.max_session_history = 15  # Keep last 15 exchanges in memory
+
         # Phase 3: Initialize memory system
         try:
             self.vector_store = VectorMemoryStore()
@@ -446,6 +450,13 @@ class EeveeLLM:
             print("\n" + debate_vis + "\n")
 
         self.ui.print_eevee_response(response)
+
+        # Phase 7.5: Add to current session conversation thread
+        # This ensures the NEXT message will see this exchange
+        self.current_session_messages.append((message, response))
+        # Keep only the last max_session_history exchanges
+        if len(self.current_session_messages) > self.max_session_history:
+            self.current_session_messages = self.current_session_messages[-self.max_session_history:]
 
         # Update state
         self._update_after_interaction("talk", message, response)
@@ -892,7 +903,7 @@ class EeveeLLM:
         self.ui.print_location_description(location.description)
 
     def _build_context(self):
-        """Build context dictionary with working memory"""
+        """Build context dictionary with working memory and current session"""
         context = PromptBuilder.build_context_dict(
             self.eevee_state,
             self.personality
@@ -902,6 +913,15 @@ class EeveeLLM:
         if self.memory_retriever:
             context['recent_memories'] = self.memory_retriever.working_memory.memories
             context['working_memory_context'] = self.memory_retriever.get_working_memory_context()
+
+        # Phase 7.5: Add current session conversation thread
+        # This ensures the LLM sees what's happening RIGHT NOW in this conversation
+        if self.current_session_messages:
+            session_context = []
+            for user_msg, eevee_msg in self.current_session_messages[-self.max_session_history:]:
+                session_context.append(f"You: {user_msg}")
+                session_context.append(f"Eevee: {eevee_msg}")
+            context['current_session'] = "\n".join(session_context)
 
         return context
 
