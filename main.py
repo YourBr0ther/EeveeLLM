@@ -274,14 +274,14 @@ class EeveeLLM:
             if args:
                 self.give_item(args)
             else:
-                self.ui.print_message("Give what? (e.g., 'give Oran Berry')")
+                self.ui.print_info("Give what item?\n💡 Try: 'give Oran Berry' or just say 'Here's a berry'")
 
         elif command == "use":
             # Phase 5: Use item command
             if args:
                 self.use_item(args)
             else:
-                self.ui.print_message("Use what? (e.g., 'use Oran Berry')")
+                self.ui.print_info("Use what item?\n💡 Try: 'use Oran Berry' or 'inventory' to see what you have")
 
         elif command == "inventory":
             # Phase 5: View inventory
@@ -292,19 +292,19 @@ class EeveeLLM:
             if args:
                 self.drop_item(args)
             else:
-                self.ui.print_message("Drop what? (e.g., 'drop Oran Berry')")
+                self.ui.print_info("Drop what item?\n💡 Try: 'drop Oran Berry' or 'inventory' to see what you have")
 
         elif command == "go":
             if args:
                 self.travel_to(args)
             else:
-                self.ui.print_message("Go where? (e.g., 'go meadow')")
+                self.ui.print_info("Go where?\n💡 Try: 'go meadow' or 'world' to see available locations")
 
         elif command == "talk":
             if args:
                 self.talk_to_eevee(args)
             else:
-                self.ui.print_message("What do you want to say?")
+                self.ui.print_info("What do you want to say?\n💡 Just type naturally! You don't need the 'talk' command")
 
         elif command == "debug":
             self.handle_debug_command(args)
@@ -325,6 +325,10 @@ class EeveeLLM:
         """Talk to Eevee"""
         self.ui.print_user_input(message)
 
+        # Show loading indicator
+        if not (Config.SHOW_BRAIN_COUNCIL or self.debug_mode):
+            self.ui.print_thinking("🧠 Thinking...")
+
         if Config.SHOW_BRAIN_COUNCIL or self.debug_mode:
             self.ui.print_system_message("Brain Council Deliberating...")
 
@@ -333,6 +337,10 @@ class EeveeLLM:
         response, council_decision = self.response_gen.generate_response(
             message, context, debug=self.debug_mode, world_map=self.world
         )
+
+        # Clear loading indicator
+        if not (Config.SHOW_BRAIN_COUNCIL or self.debug_mode):
+            self.ui.clear_thinking()
 
         # Show brain council debate if enabled
         if council_decision and (Config.SHOW_BRAIN_COUNCIL or self.debug_mode):
@@ -357,6 +365,9 @@ class EeveeLLM:
         try:
             self.ui.print_user_input("*pets Eevee gently*")
 
+            # Show loading indicator
+            self.ui.print_thinking("💭 Responding...")
+
             context = self._build_context()
             response, _ = self.response_gen.generate_response(
                 "The trainer pets me gently",
@@ -364,6 +375,9 @@ class EeveeLLM:
                 debug=self.debug_mode,
                 world_map=self.world
             )
+
+            # Clear loading indicator
+            self.ui.clear_thinking()
 
             self.ui.print_eevee_response(response)
 
@@ -444,7 +458,7 @@ class EeveeLLM:
             success, new_state, message = self.eevee_state.use_item(item)
 
             if success:
-                self.ui.print_eevee_response(message)
+                self.ui.print_success(message)
 
                 # Show state changes
                 if new_state:
@@ -460,7 +474,9 @@ class EeveeLLM:
                 # Update after interaction
                 self._update_after_interaction("use_item", item, message)
             else:
-                self.ui.print_message(message)
+                # Item not found or can't be used
+                self.ui.print_warning(message)
+                self.ui.print_info("💡 Type 'inventory' to see what you have")
 
         except Exception as e:
             logger.error(f"Error using item: {e}", exc_info=True)
@@ -546,7 +562,8 @@ class EeveeLLM:
                 if item_def and self.eevee_state.has_item(item_def.id):
                     item = item_def.id
                 else:
-                    self.ui.print_message(f"You don't have '{item}' in your inventory.")
+                    self.ui.print_warning(f"You don't have '{item}' in your inventory.")
+                    self.ui.print_info("💡 Type 'inventory' to see what you have")
                     return
 
             # Get item definition for display (if it exists)
@@ -554,20 +571,29 @@ class EeveeLLM:
             if not item_def:
                 item_def = ItemManager.get_item_by_name(item)
 
+            # Check if item is valuable (keepsake/treasure) and ask for confirmation
+            if item_def and not item_def.consumable:
+                self.ui.print_warning(
+                    f"'{item_def.name}' {item_def.emoji} is a keepsake and cannot be recovered once dropped."
+                )
+                if not self.ui.confirm("Are you sure you want to drop it?", default=False):
+                    self.ui.print_info(f"Kept the {item_def.name}.")
+                    return
+
             # Remove the item
             success = self.eevee_state.remove_item(item)
 
             if success:
                 if item_def:
                     self.ui.print_user_input(f"*drops {item_def.name}*")
-                    self.ui.print_message(f"Dropped {item_def.emoji} {item_def.name}")
+                    self.ui.print_success(f"Dropped {item_def.emoji} {item_def.name}")
                 else:
                     self.ui.print_user_input(f"*drops {item}*")
-                    self.ui.print_message(f"Dropped {item}")
+                    self.ui.print_success(f"Dropped {item}")
 
                 logger.info(f"Dropped item: {item}")
             else:
-                self.ui.print_message(f"Failed to drop '{item}'")
+                self.ui.print_error(f"Failed to drop '{item}'")
 
         except Exception as e:
             logger.error(f"Error dropping item: {e}", exc_info=True)
@@ -593,7 +619,13 @@ class EeveeLLM:
                 return
 
             if not self.world.can_travel(current_loc.id, target_loc.id):
-                self.ui.print_message(f"You can't go directly to {target_loc.name} from here.")
+                # Show available locations
+                available = [loc.name for loc in self.world.get_connected_locations(current_loc.id)]
+                self.ui.print_warning(f"You can't go directly to {target_loc.name} from {current_loc.name}.")
+                if available:
+                    self.ui.print_info(f"From here, you can go to:\n   • " + "\n   • ".join(available))
+                else:
+                    self.ui.print_info("Type 'world' to see the map.")
                 return
 
             # Travel
@@ -765,9 +797,12 @@ class EeveeLLM:
                 return
 
             # Search memories
-            self.ui.print_message(f"\nSearching memories for: '{query}'...")
+            self.ui.print_thinking(f"📚 Searching memories for '{query}'...")
 
             results = self.memory_retriever.search_memories(query, limit=10)
+
+            # Clear loading indicator
+            self.ui.clear_thinking()
 
             if not results:
                 self.ui.print_message("No memories found matching that query.")

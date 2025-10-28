@@ -283,12 +283,14 @@ class TerminalUI:
         """Print welcome message"""
         welcome = """
 ╔══════════════════════════════════════════════════════════════════════╗
+║                       Welcome to EeveeLLM! 🌟                        ║
 ║                                                                      ║
-║                    Welcome to EeveeLLM                               ║
+║              Your AI Eevee companion is excited to see you!          ║
 ║                                                                      ║
-║              Your Eevee companion is waiting for you!                ║
+║  💬 Just talk naturally! Try:                                        ║
+║     "Hello!" • "How are you?" • "Let's play!" • "What do you have?" ║
 ║                                                                      ║
-║                    Type 'help' for commands                          ║
+║  📖 Type 'help' for all commands                                     ║
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
         """
@@ -318,3 +320,68 @@ Until next time, trainer!
             print(f"{Fore.RED}Error: {error}{Style.RESET_ALL}")
         else:
             print(f"Error: {error}")
+
+    def print_thinking(self, message: str):
+        """
+        Show a thinking/loading indicator.
+
+        This prints on the same line and can be cleared later.
+        Used for operations that take 1+ seconds.
+        """
+        if self.use_color:
+            print(f"{Fore.BLUE}{Style.DIM}{message}{Style.RESET_ALL}", end='', flush=True)
+        else:
+            print(f"{message}", end='', flush=True)
+
+    def clear_thinking(self):
+        """Clear the thinking indicator line"""
+        # Print spaces to cover the line, then carriage return
+        print('\r' + ' ' * 80 + '\r', end='', flush=True)
+
+    def print_warning(self, message: str):
+        """Print warning message (yellow with emoji)"""
+        if self.use_color:
+            print(f"{Fore.YELLOW}⚠️  {message}{Style.RESET_ALL}")
+        else:
+            print(f"Warning: {message}")
+
+    def print_success(self, message: str):
+        """Print success message (green with checkmark)"""
+        if self.use_color:
+            print(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+        else:
+            print(f"✓ {message}")
+
+    def print_info(self, message: str):
+        """Print info message (blue with info icon)"""
+        if self.use_color:
+            print(f"{Fore.CYAN}ℹ️  {message}{Style.RESET_ALL}")
+        else:
+            print(f"Info: {message}")
+
+    def confirm(self, message: str, default: bool = False) -> bool:
+        """
+        Ask for yes/no confirmation.
+
+        Args:
+            message: The question to ask
+            default: Default answer if user just presses enter
+
+        Returns:
+            True if user confirmed, False otherwise
+        """
+        default_str = "[Y/n]" if default else "[y/N]"
+        prompt = f"{message} {default_str}: "
+
+        try:
+            if self.use_color:
+                response = input(f"{Fore.YELLOW}{prompt}{Style.RESET_ALL}").strip().lower()
+            else:
+                response = input(prompt).strip().lower()
+
+            if not response:
+                return default
+
+            return response in ['y', 'yes']
+        except (EOFError, KeyboardInterrupt):
+            return False
