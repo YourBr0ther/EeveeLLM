@@ -232,6 +232,7 @@ class EeveeLLM:
 
         # Try to parse natural language intent first
         intent = None
+        is_natural_language = False
         if self.intent_parser:
             intent = self.intent_parser.parse(user_input)
 
@@ -239,6 +240,7 @@ class EeveeLLM:
         if intent:
             command = intent.command
             args = intent.args
+            is_natural_language = True
             if Config.VERBOSE_LOGGING:
                 logger.info(f"Natural language detected: '{user_input}' → {command} {args}")
         else:
@@ -256,7 +258,9 @@ class EeveeLLM:
             self.ui.print_help(category=args if args else None)
 
         elif command == "stats":
-            self.show_stats()
+            # If natural language (like "how are you?"), just respond naturally
+            # If explicit command, show the stats table
+            self.show_stats(show_table=not is_natural_language)
 
         elif command == "world":
             self.show_world()
@@ -645,21 +649,31 @@ class EeveeLLM:
 
         self.ui.print_eevee_response(action)
 
-    def show_stats(self):
-        """Show detailed stats with beautiful visual display"""
+    def show_stats(self, show_table: bool = True):
+        """
+        Respond to status check.
+
+        Args:
+            show_table: If True, display the stats table (for explicit 'stats' command).
+                       If False, just give a natural response (for "how are you?" etc.)
+        """
         state = self.eevee_state
         personality = self.personality
 
-        # Use new detailed stats display
-        self.ui.print_detailed_stats(state, personality)
+        # Only show detailed stats table for explicit command
+        if show_table:
+            self.ui.print_detailed_stats(state, personality)
 
-        # Eevee reacts to being checked
+        # Eevee responds naturally (always)
         try:
             self.ui.print_thinking("💭 Responding...")
 
             context = self._build_context()
+            # Adjust prompt based on whether this is conversational or a stats check
+            prompt = "The trainer is asking how I'm doing" if not show_table else "The trainer is checking how I'm doing"
+
             response, _ = self.response_gen.generate_response(
-                "The trainer is checking how I'm doing",
+                prompt,
                 context,
                 debug=self.debug_mode,
                 world_map=self.world
@@ -874,6 +888,19 @@ class EeveeLLM:
             return
 
         data = self.last_timeline_data
+
+        # Validate data structure
+        required_keys = ['activities', 'hours_elapsed']
+        if detailed:
+            missing_keys = [key for key in required_keys if key not in data]
+        else:
+            required_keys.extend(['net_changes', 'items_found'])
+            missing_keys = [key for key in required_keys if key not in data]
+
+        if missing_keys:
+            logger.error(f"Timeline data missing required keys: {missing_keys}")
+            self.ui.print_error("Timeline data is incomplete. This shouldn't happen!")
+            return
 
         # Use summary or detailed view
         if detailed:

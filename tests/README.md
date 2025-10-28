@@ -35,6 +35,9 @@ pytest tests/
 ### Command System Tests
 
 - **test_command_responses.py** - Tests Eevee's natural responses to commands
+- **test_conversational_stats.py** - Tests natural language behavior:
+  - "How are you?" should give natural response (no stats table)
+  - "stats" command should show stats table + response
 
 ### Bug Fix Tests
 
@@ -42,6 +45,9 @@ pytest tests/
   - Behavior patterns cleanup
   - Consensus level fix
   - Datetime error handling
+- **test_critical_bug_fixes.py** - Tests critical bugs from UX changes review:
+  - Bug #1: Timeline validation for missing keys
+  - Bug #2: print_stat_bar() consistency (returns None, not string)
 
 ### Legacy Tests
 

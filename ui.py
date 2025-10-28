@@ -495,9 +495,9 @@ Until next time, trainer!
             return False
 
     def print_stat_bar(self, label: str, value: int, max_value: int = 100,
-                       emoji: str = "", reverse: bool = False) -> str:
+                       emoji: str = "", reverse: bool = False) -> None:
         """
-        Create a visual stat bar with context indicator.
+        Print a visual stat bar with context indicator.
 
         Args:
             label: Stat name (e.g., "Health", "Hunger")
@@ -505,9 +505,6 @@ Until next time, trainer!
             max_value: Maximum value (default 100)
             emoji: Emoji to show before label
             reverse: If True, high values are bad (e.g., hunger)
-
-        Returns:
-            Formatted stat bar string
         """
         # Calculate percentage and bar
         percentage = int((value / max_value) * 100)
@@ -545,11 +542,13 @@ Until next time, trainer!
                 color = Fore.GREEN
                 context = "(Excellent!)"
 
-        # Format the line
+        # Format and print the line
         if self.use_color:
-            return f"  {emoji} {label:10} {color}{bar}{Style.RESET_ALL} {percentage:3}%  {Style.DIM}{context}{Style.RESET_ALL}"
+            line = f"  {emoji} {label:10} {color}{bar}{Style.RESET_ALL} {percentage:3}%  {Style.DIM}{context}{Style.RESET_ALL}"
         else:
-            return f"  {emoji} {label:10} {bar} {percentage:3}%  {context}"
+            line = f"  {emoji} {label:10} {bar} {percentage:3}%  {context}"
+
+        print(line)
 
     def print_detailed_stats(self, state, personality):
         """
@@ -579,10 +578,10 @@ Until next time, trainer!
         else:
             print("💚 PHYSICAL HEALTH")
 
-        print(self.print_stat_bar("Health", state.health, emoji="❤️"))
-        print(self.print_stat_bar("Energy", state.energy, emoji="⚡"))
-        print(self.print_stat_bar("Happiness", state.happiness, emoji="😊"))
-        print(self.print_stat_bar("Hunger", state.hunger, emoji="🍖", reverse=True))
+        self.print_stat_bar("Health", state.health, emoji="❤️")
+        self.print_stat_bar("Energy", state.energy, emoji="⚡")
+        self.print_stat_bar("Happiness", state.happiness, emoji="😊")
+        self.print_stat_bar("Hunger", state.hunger, emoji="🍖", reverse=True)
 
         # Relationship Section
         print()
