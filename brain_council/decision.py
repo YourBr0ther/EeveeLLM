@@ -18,6 +18,7 @@ class CouncilDecision:
     consensus_level: float  # 0.0 to 1.0, how unified was the decision
     conflict_level: float = 0.0  # Phase 6: 0.0 to 1.0, how much conflict detected (ACC)
     conflict_detected: bool = False  # Phase 6: Whether ACC detected significant conflict
+    retrieved_memories: List[Tuple[str, Dict[str, Any], float]] = None  # Retrieved memories from Hippocampus
 
 
 class DecisionEngine:
@@ -87,6 +88,9 @@ class DecisionEngine:
         # Generate decision summary (include conflict info if detected)
         summary = self._generate_summary(vote_scores, consensus, conflict_level, conflict_detected)
 
+        # Extract retrieved memories from winning vote (if any)
+        retrieved_memories = winning_vote.retrieved_memories if hasattr(winning_vote, 'retrieved_memories') else None
+
         return CouncilDecision(
             winning_vote=winning_vote,
             all_votes=[vote for vote, _ in vote_scores],
@@ -94,7 +98,8 @@ class DecisionEngine:
             decision_summary=summary,
             consensus_level=consensus,
             conflict_level=conflict_level,
-            conflict_detected=conflict_detected
+            conflict_detected=conflict_detected,
+            retrieved_memories=retrieved_memories
         )
 
     def _calculate_consensus(self, vote_scores: List[Tuple[RegionVote, float]]) -> float:

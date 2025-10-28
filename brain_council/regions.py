@@ -17,6 +17,7 @@ class RegionVote:
     emotional_weight: float  # 0.0 to 1.0
     primary_emotion: str = "neutral"  # Phase 6: Primary emotion (joy, fear, sadness, etc.)
     arousal_level: float = 0.5  # Phase 6: How intense is this emotion (0.0 = calm, 1.0 = intense)
+    retrieved_memories: List[Tuple[str, Dict[str, Any], float]] = None  # Memories retrieved by this region (Hippocampus)
 
 
 class BrainRegion(ABC):
@@ -383,7 +384,8 @@ class Hippocampus(BrainRegion):
                 confidence=confidence,
                 emotional_weight=0.4,
                 primary_emotion=primary_emotion,
-                arousal_level=arousal_level
+                arousal_level=arousal_level,
+                retrieved_memories=relevant_memories  # Include retrieved memories
             )
 
         except Exception as e:

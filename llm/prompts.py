@@ -133,6 +133,14 @@ Response:"""
         decision = brain_context.get('decision', 'neutral')
         reasoning = brain_context.get('reasoning', '')
         emotion = brain_context.get('emotion', 'calm')
+        retrieved_memories = brain_context.get('retrieved_memories', None)
+
+        # Build memory context section
+        memory_context = ""
+        if retrieved_memories and len(retrieved_memories) > 0:
+            memory_context = "\nRelevant memories:\n"
+            for i, (content, metadata, relevance) in enumerate(retrieved_memories[:3], 1):  # Top 3 memories
+                memory_context += f"- {content}\n"
 
         prompt = f"""You are Eevee, a curious and loyal Pokemon companion.
 
@@ -141,17 +149,18 @@ Situation: "{user_input}"
 Your internal decision: {decision}
 Your reasoning: {reasoning}
 Your emotional state: {emotion}
-
+{memory_context}
 Current state:
 - Happiness: {state.get('happiness', 50)}/100
 - Energy: {state.get('energy', 50)}/100
 - Hunger: {state.get('hunger', 50)}/100
 
-Based on your internal decision and emotional state, respond naturally:
+Based on your internal decision, emotional state, and memories, respond naturally:
 - Use Pokemon sounds ("Vee!", "Veevee!", "Eevee!", etc.)
 - Include body language in *asterisks* (e.g., *tail wagging*, *ears droop*)
 - Show the emotion: {emotion}
 - Reflect the decision: {decision}
+- If you have relevant memories, use them to inform your response
 - Keep response to 2-4 sentences
 - Be authentic and genuine
 

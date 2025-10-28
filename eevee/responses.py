@@ -65,7 +65,8 @@ class ResponseGenerator:
                     'reasoning': winning_vote.reasoning,
                     'emotion': self.brain_council.decision_engine.get_dominant_emotion(
                         council_decision.all_votes
-                    )
+                    ),
+                    'retrieved_memories': council_decision.retrieved_memories  # Include retrieved memories
                 }
 
                 prompt = PromptBuilder.build_response_with_council(
