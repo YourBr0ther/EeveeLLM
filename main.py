@@ -284,8 +284,9 @@ class EeveeLLM:
                 self.ui.print_info("Use what item?\n💡 Try: 'use Oran Berry' or 'inventory' to see what you have")
 
         elif command == "inventory":
-            # Phase 5: View inventory
-            self.show_inventory()
+            # Phase 5: View inventory (compact by default, detailed if args)
+            detailed = args and "detail" in args.lower()
+            self.show_inventory(detailed=detailed)
 
         elif command in ["drop", "remove"]:
             # Phase 5: Drop/remove item from inventory
@@ -482,69 +483,42 @@ class EeveeLLM:
             logger.error(f"Error using item: {e}", exc_info=True)
             self.ui.print_error(f"Failed to use item: {e}")
 
-    def show_inventory(self):
-        """Show Eevee's inventory (Phase 5)"""
-        try:
-            from world.items import ItemManager
+    def show_inventory(self, detailed: bool = False):
+        """
+        Show Eevee's inventory.
 
+        Args:
+            detailed: If True, show detailed view with descriptions
+        """
+        try:
             inventory = self.eevee_state.inventory
 
-            if not inventory:
-                self.ui.print_message("\n📦 Inventory is empty")
-                return
+            # Use compact or detailed view
+            if detailed:
+                self.ui.print_detailed_inventory(inventory)
+            else:
+                self.ui.print_compact_inventory(inventory)
 
-            self.ui.print_message(f"\n📦 Inventory ({len(inventory)} items):")
-            self.ui.print_message("=" * 60)
+            # Eevee reacts to showing inventory (only if inventory not empty)
+            if inventory:
+                try:
+                    self.ui.print_thinking("💭 Responding...")
 
-            # Group items by type
-            items_by_type = {}
-            for item_id in inventory:
-                item_def = ItemManager.get_item(item_id)
-                if item_def:
-                    item_type = item_def.item_type.value
-                    if item_type not in items_by_type:
-                        items_by_type[item_type] = []
-                    items_by_type[item_type].append(item_def)
-                else:
-                    # Unknown item
-                    if "unknown" not in items_by_type:
-                        items_by_type["unknown"] = []
-                    items_by_type["unknown"].append(item_id)
+                    context = self._build_context()
+                    item_count = len(inventory)
+                    response, _ = self.response_gen.generate_response(
+                        f"The trainer is looking at my {item_count} item{'s' if item_count != 1 else ''}",
+                        context,
+                        debug=self.debug_mode,
+                        world_map=self.world
+                    )
 
-            # Display by category
-            for category, items in sorted(items_by_type.items()):
-                self.ui.print_message(f"\n{category.upper()}:")
-                for item in items:
-                    if isinstance(item, str):
-                        # Unknown item
-                        self.ui.print_message(f"  • {item}")
-                    else:
-                        # Catalog item
-                        consumable_str = "" if item.consumable else " (Keepsake)"
-                        self.ui.print_message(
-                            f"  {item.emoji} {item.name}{consumable_str}"
-                        )
-                        self.ui.print_message(f"     {item.description}")
+                    self.ui.clear_thinking()
+                    self.ui.print_eevee_response(response)
 
-            self.ui.print_message("\n" + "=" * 60)
-            self.ui.print_message("Use 'use <item>' to use an item")
-            self.ui.print_message("")  # Empty line
-
-            # Eevee reacts to showing inventory
-            try:
-                context = self._build_context()
-                item_count = len(inventory)
-                response, _ = self.response_gen.generate_response(
-                    f"The trainer is looking at my {item_count} item{'s' if item_count != 1 else ''}",
-                    context,
-                    debug=self.debug_mode,
-                    world_map=self.world
-                )
-                self.ui.print_eevee_response(response)
-
-                self._update_after_interaction("inventory", "check inventory", response)
-            except Exception as e:
-                logger.error(f"Error generating inventory response: {e}")
+                    self._update_after_interaction("inventory", "check inventory", response)
+                except Exception as e:
+                    logger.error(f"Error generating inventory response: {e}")
 
         except Exception as e:
             logger.error(f"Error showing inventory: {e}", exc_info=True)
@@ -671,42 +645,17 @@ class EeveeLLM:
         self.ui.print_eevee_response(action)
 
     def show_stats(self):
-        """Show detailed stats"""
+        """Show detailed stats with beautiful visual display"""
         state = self.eevee_state
         personality = self.personality
 
-        print("\n" + "=" * 60)
-        print("EEVEE STATUS")
-        print("=" * 60)
-        print(f"\nPhysical State:")
-        print(f"  Hunger:    {state.hunger}/100")
-        print(f"  Energy:    {state.energy}/100")
-        print(f"  Health:    {state.health}/100")
-        print(f"  Happiness: {state.happiness}/100")
-
-        print(f"\nRelationship:")
-        print(f"  Trust:     {state.trust}/100")
-        print(f"  Bond:      {state.bond}/100")
-
-        print(f"\nPersonality:")
-        print(f"  Curiosity:     {personality.curiosity}/10")
-        print(f"  Bravery:       {personality.bravery}/10")
-        print(f"  Playfulness:   {personality.playfulness}/10")
-        print(f"  Loyalty:       {personality.loyalty}/10")
-        print(f"  Independence:  {personality.independence}/10")
-
-        print(f"\nInventory:")
-        if state.inventory:
-            for item in state.inventory:
-                print(f"  - {item}")
-        else:
-            print("  (empty)")
-
-        print(f"\nInteractions: {state._state['total_interactions']}")
-        print("=" * 60 + "\n")
+        # Use new detailed stats display
+        self.ui.print_detailed_stats(state, personality)
 
         # Eevee reacts to being checked
         try:
+            self.ui.print_thinking("💭 Responding...")
+
             context = self._build_context()
             response, _ = self.response_gen.generate_response(
                 "The trainer is checking how I'm doing",
@@ -714,6 +663,8 @@ class EeveeLLM:
                 debug=self.debug_mode,
                 world_map=self.world
             )
+
+            self.ui.clear_thinking()
             self.ui.print_eevee_response(response)
 
             self._update_after_interaction("stats", "check stats", response)
@@ -804,37 +755,8 @@ class EeveeLLM:
             # Clear loading indicator
             self.ui.clear_thinking()
 
-            if not results:
-                self.ui.print_message("No memories found matching that query.")
-                return
-
-            self.ui.print_message(f"\nFound {len(results)} relevant memor{'y' if len(results) == 1 else 'ies'}:\n")
-
-            for i, (content, metadata, similarity) in enumerate(results, 1):
-                memory_type = metadata.get('memory_type', 'unknown')
-                emotion = metadata.get('primary_emotion', '')
-                location = metadata.get('location', '')
-                timestamp = metadata.get('timestamp', '')
-
-                # Format timestamp
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(timestamp)
-                    time_str = dt.strftime("%Y-%m-%d %H:%M")
-                except Exception:
-                    time_str = "unknown time"
-
-                self.ui.print_message(f"{i}. [{memory_type}] {content}")
-
-                details = []
-                if emotion:
-                    details.append(f"emotion: {emotion}")
-                if location:
-                    details.append(f"location: {location}")
-                details.append(f"relevance: {similarity:.2f}")
-                details.append(f"time: {time_str}")
-
-                self.ui.print_message(f"   ({', '.join(details)})\n")
+            # Use new formatted memory display
+            self.ui.print_formatted_memories(results)
 
         except Exception as e:
             logger.error(f"Error browsing memories: {e}")

@@ -385,3 +385,459 @@ Until next time, trainer!
             return response in ['y', 'yes']
         except (EOFError, KeyboardInterrupt):
             return False
+
+    def print_stat_bar(self, label: str, value: int, max_value: int = 100,
+                       emoji: str = "", reverse: bool = False) -> str:
+        """
+        Create a visual stat bar with context indicator.
+
+        Args:
+            label: Stat name (e.g., "Health", "Hunger")
+            value: Current value
+            max_value: Maximum value (default 100)
+            emoji: Emoji to show before label
+            reverse: If True, high values are bad (e.g., hunger)
+
+        Returns:
+            Formatted stat bar string
+        """
+        # Calculate percentage and bar
+        percentage = int((value / max_value) * 100)
+        bar_length = 20
+        filled = int((value / max_value) * bar_length)
+        bar = "█" * filled + "░" * (bar_length - filled)
+
+        # Determine color based on value (or reverse for hunger)
+        if reverse:
+            # High values are bad (hunger)
+            if value > 70:
+                color = Fore.RED
+                context = "(Very hungry!)"
+            elif value > 50:
+                color = Fore.YELLOW
+                context = "(Getting hungry)"
+            elif value > 30:
+                color = Fore.GREEN
+                context = "(Satisfied)"
+            else:
+                color = Fore.GREEN
+                context = "(Full)"
+        else:
+            # High values are good (health, energy, happiness)
+            if value < 30:
+                color = Fore.RED
+                context = "(Critical!)" if label == "Health" else "(Very low!)"
+            elif value < 60:
+                color = Fore.YELLOW
+                context = "(Low)"
+            elif value < 80:
+                color = Fore.GREEN
+                context = "(Good)"
+            else:
+                color = Fore.GREEN
+                context = "(Excellent!)"
+
+        # Format the line
+        if self.use_color:
+            return f"  {emoji} {label:10} {color}{bar}{Style.RESET_ALL} {percentage:3}%  {Style.DIM}{context}{Style.RESET_ALL}"
+        else:
+            return f"  {emoji} {label:10} {bar} {percentage:3}%  {context}"
+
+    def print_detailed_stats(self, state, personality):
+        """
+        Print beautifully formatted stats display.
+
+        Args:
+            state: EeveeState object
+            personality: Personality object
+        """
+        # Header
+        separator = "╔" + "═" * 68 + "╗"
+        title = "║" + "EEVEE'S STATUS".center(68) + "║"
+        separator_bottom = "╚" + "═" * 68 + "╝"
+
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{separator}")
+            print(f"{Style.BRIGHT}{title}{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}{separator_bottom}{Style.RESET_ALL}\n")
+        else:
+            print(f"\n{separator}")
+            print(title)
+            print(f"{separator_bottom}\n")
+
+        # Physical Health Section
+        if self.use_color:
+            print(f"{Fore.GREEN}{Style.BRIGHT}💚 PHYSICAL HEALTH{Style.RESET_ALL}")
+        else:
+            print("💚 PHYSICAL HEALTH")
+
+        print(self.print_stat_bar("Health", state.health, emoji="❤️"))
+        print(self.print_stat_bar("Energy", state.energy, emoji="⚡"))
+        print(self.print_stat_bar("Happiness", state.happiness, emoji="😊"))
+        print(self.print_stat_bar("Hunger", state.hunger, emoji="🍖", reverse=True))
+
+        # Relationship Section
+        print()
+        if self.use_color:
+            print(f"{Fore.MAGENTA}{Style.BRIGHT}🤝 RELATIONSHIP{Style.RESET_ALL}")
+        else:
+            print("🤝 RELATIONSHIP")
+
+        trust_bar = int((state.trust / 100) * 20)
+        bond_bar = int((state.bond / 100) * 20)
+
+        if self.use_color:
+            trust_color = Fore.GREEN if state.trust >= 50 else Fore.YELLOW
+            bond_color = Fore.GREEN if state.bond >= 50 else Fore.YELLOW
+            print(f"  Trust: {trust_color}{'█' * trust_bar}{'░' * (20 - trust_bar)}{Style.RESET_ALL} {state.trust}%  |  "
+                  f"Bond: {bond_color}{'█' * bond_bar}{'░' * (20 - bond_bar)}{Style.RESET_ALL} {state.bond}%")
+        else:
+            print(f"  Trust: {'█' * trust_bar}{'░' * (20 - trust_bar)} {state.trust}%  |  "
+                  f"Bond: {'█' * bond_bar}{'░' * (20 - bond_bar)} {state.bond}%")
+
+        # Personality Section
+        print()
+        if self.use_color:
+            print(f"{Fore.YELLOW}{Style.BRIGHT}🌟 PERSONALITY TRAITS{Style.RESET_ALL}")
+        else:
+            print("🌟 PERSONALITY TRAITS")
+
+        traits = [
+            f"Curious {personality.curiosity}/10",
+            f"Brave {personality.bravery}/10",
+            f"Playful {personality.playfulness}/10",
+            f"Loyal {personality.loyalty}/10",
+            f"Independent {personality.independence}/10"
+        ]
+        print("  " + " • ".join(traits))
+
+        # Inventory Preview
+        print()
+        if self.use_color:
+            print(f"{Fore.CYAN}{Style.BRIGHT}🎒 INVENTORY{Style.RESET_ALL}", end="")
+        else:
+            print("🎒 INVENTORY", end="")
+
+        if state.inventory:
+            print(f" ({len(state.inventory)} items)")
+            # Show first 3 items as preview
+            from world.items import ItemManager
+            preview_items = []
+            for item_id in state.inventory[:3]:
+                item_def = ItemManager.get_item(item_id)
+                if item_def:
+                    preview_items.append(f"{item_def.emoji} {item_def.name}")
+                else:
+                    preview_items.append(item_id)
+
+            print("  " + "  •  ".join(preview_items))
+
+            if len(state.inventory) > 3:
+                if self.use_color:
+                    print(f"  {Style.DIM}...and {len(state.inventory) - 3} more{Style.RESET_ALL}")
+                else:
+                    print(f"  ...and {len(state.inventory) - 3} more")
+
+            print(f"  {Style.DIM}💡 Type 'inventory' to see all items{Style.RESET_ALL}" if self.use_color else "  💡 Type 'inventory' to see all items")
+        else:
+            print(" (empty)")
+
+        # Footer
+        print()
+        if self.use_color:
+            print(f"{Style.DIM}📊 Total interactions with trainer: {state._state['total_interactions']}{Style.RESET_ALL}\n")
+        else:
+            print(f"📊 Total interactions with trainer: {state._state['total_interactions']}\n")
+
+    def print_compact_inventory(self, inventory_items):
+        """
+        Print compact inventory view (default).
+
+        Args:
+            inventory_items: List of item IDs/objects
+        """
+        from world.items import ItemManager
+
+        if not inventory_items:
+            self.print_message("\n📦 Inventory is empty\n")
+            return
+
+        # Header
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}🎒 Inventory ({len(inventory_items)} items){Style.RESET_ALL}")
+        else:
+            print(f"\n🎒 Inventory ({len(inventory_items)} items)")
+
+        print("━" * 70)
+
+        # Group items and count quantities
+        item_counts = {}
+        for item_id in inventory_items:
+            if item_id in item_counts:
+                item_counts[item_id] += 1
+            else:
+                item_counts[item_id] = 1
+
+        # Display items compactly
+        display_items = []
+        for item_id, count in item_counts.items():
+            item_def = ItemManager.get_item(item_id)
+            if item_def:
+                qty_str = f" × {count}" if count > 1 else ""
+                display_items.append(f"{item_def.emoji} {item_def.name}{qty_str}")
+            else:
+                qty_str = f" × {count}" if count > 1 else ""
+                display_items.append(f"{item_id}{qty_str}")
+
+        # Print in rows of 3
+        for i in range(0, len(display_items), 3):
+            row_items = display_items[i:i+3]
+            # Pad each item to 22 characters for alignment
+            formatted_row = [f"{item:22}" for item in row_items]
+            print("  " + "  ".join(formatted_row))
+
+        # Footer with tips
+        print("━" * 70)
+        if self.use_color:
+            print(f"{Style.DIM}💡 'use <item>' to use  •  'drop <item>' to remove  •  'inventory detail' for descriptions{Style.RESET_ALL}\n")
+        else:
+            print("💡 'use <item>' to use  •  'drop <item>' to remove  •  'inventory detail' for descriptions\n")
+
+    def print_detailed_inventory(self, inventory_items):
+        """
+        Print detailed inventory view with descriptions.
+
+        Args:
+            inventory_items: List of item IDs/objects
+        """
+        from world.items import ItemManager
+
+        if not inventory_items:
+            self.print_message("\n📦 Inventory is empty\n")
+            return
+
+        # Header
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}🎒 Inventory ({len(inventory_items)} items) - Detailed View{Style.RESET_ALL}")
+        else:
+            print(f"\n🎒 Inventory ({len(inventory_items)} items) - Detailed View")
+
+        print("━" * 70)
+
+        # Group by type
+        items_by_type = {}
+        for item_id in inventory_items:
+            item_def = ItemManager.get_item(item_id)
+            if item_def:
+                item_type = item_def.item_type.value
+                if item_type not in items_by_type:
+                    items_by_type[item_type] = []
+                items_by_type[item_type].append(item_def)
+            else:
+                # Unknown item
+                if "unknown" not in items_by_type:
+                    items_by_type["unknown"] = []
+                items_by_type["unknown"].append(item_id)
+
+        # Display by category
+        for category, items in sorted(items_by_type.items()):
+            print()
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}{category.upper()}{Style.RESET_ALL} ({len(items)})")
+            else:
+                print(f"{category.upper()} ({len(items)})")
+
+            for item in items:
+                if isinstance(item, str):
+                    # Unknown item
+                    self.print_message(f"  • {item}")
+                else:
+                    # Catalog item
+                    consumable_str = "" if item.consumable else " (Keepsake)"
+                    if self.use_color:
+                        print(f"  {item.emoji} {Style.BRIGHT}{item.name}{Style.RESET_ALL}{consumable_str}")
+                        print(f"     {Style.DIM}{item.description}{Style.RESET_ALL}")
+                    else:
+                        print(f"  {item.emoji} {item.name}{consumable_str}")
+                        print(f"     {item.description}")
+
+        # Footer
+        print("\n" + "━" * 70)
+        if self.use_color:
+            print(f"{Style.DIM}💡 'use <item>' to use  •  'drop <item>' to remove  •  'inventory' for compact view{Style.RESET_ALL}\n")
+        else:
+            print("💡 'use <item>' to use  •  'drop <item>' to remove  •  'inventory' for compact view\n")
+
+    def format_relative_time(self, timestamp_str: str) -> str:
+        """
+        Convert ISO timestamp to human-friendly relative time.
+
+        Args:
+            timestamp_str: ISO format timestamp
+
+        Returns:
+            Human-friendly string like "2 hours ago", "Yesterday", etc.
+        """
+        from datetime import datetime, timedelta
+
+        try:
+            timestamp = datetime.fromisoformat(timestamp_str)
+            now = datetime.now()
+            delta = now - timestamp
+
+            # Less than a minute
+            if delta.total_seconds() < 60:
+                return "Just now"
+
+            # Less than an hour
+            elif delta.total_seconds() < 3600:
+                minutes = int(delta.total_seconds() / 60)
+                return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+
+            # Less than 24 hours
+            elif delta.total_seconds() < 86400:
+                hours = int(delta.total_seconds() / 3600)
+                return f"{hours} hour{'s' if hours != 1 else ''} ago"
+
+            # Yesterday
+            elif delta.days == 1:
+                return f"Yesterday at {timestamp.strftime('%I:%M %p')}"
+
+            # Less than a week
+            elif delta.days < 7:
+                return f"{delta.days} days ago"
+
+            # Less than a month
+            elif delta.days < 30:
+                weeks = delta.days // 7
+                return f"{weeks} week{'s' if weeks != 1 else ''} ago"
+
+            # Less than a year
+            elif delta.days < 365:
+                months = delta.days // 30
+                return f"{months} month{'s' if months != 1 else ''} ago"
+
+            # Over a year
+            else:
+                years = delta.days // 365
+                return f"{years} year{'s' if years != 1 else ''} ago"
+
+        except Exception:
+            return "Unknown time"
+
+    def format_star_rating(self, relevance: float) -> str:
+        """
+        Convert relevance score to star rating.
+
+        Args:
+            relevance: Relevance score (typically 0.0-1.0+)
+
+        Returns:
+            Star rating string like "★★★★☆"
+        """
+        # Normalize to 0-5 scale (relevance scores can be > 1.0)
+        normalized = min(5, max(0, relevance * 5))
+        filled_stars = int(normalized)
+        empty_stars = 5 - filled_stars
+
+        return "★" * filled_stars + "☆" * empty_stars
+
+    def print_formatted_memories(self, results):
+        """
+        Print memories with beautiful formatting grouped by type.
+
+        Args:
+            results: List of (content, metadata, similarity) tuples
+        """
+        if not results:
+            self.print_warning("No memories found matching that query.")
+            return
+
+        # Group by memory type
+        memories_by_type = {}
+        for content, metadata, similarity in results:
+            memory_type = metadata.get('memory_type', 'unknown')
+            if memory_type not in memories_by_type:
+                memories_by_type[memory_type] = []
+            memories_by_type[memory_type].append((content, metadata, similarity))
+
+        # Print header
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}🔍 Found {len(results)} memories:{Style.RESET_ALL}")
+        else:
+            print(f"\n🔍 Found {len(results)} memories:")
+
+        print("━" * 70 + "\n")
+
+        # Emoji mapping for memory types
+        type_emojis = {
+            'episodic': '📖',
+            'semantic': '🧠',
+            'emotional': '💙',
+            'procedural': '⚙️'
+        }
+
+        # Print each type group
+        type_order = ['episodic', 'semantic', 'emotional', 'procedural']
+        for memory_type in type_order:
+            if memory_type not in memories_by_type:
+                continue
+
+            memories = memories_by_type[memory_type]
+            emoji = type_emojis.get(memory_type, '📝')
+
+            # Type header
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}{emoji} {memory_type.upper()}{Style.RESET_ALL} (Events & Experiences)" if memory_type == 'episodic' else f"{Fore.YELLOW}{Style.BRIGHT}{emoji} {memory_type.upper()}{Style.RESET_ALL}")
+            else:
+                print(f"{emoji} {memory_type.upper()}")
+
+            # Print memories of this type
+            for i, (content, metadata, similarity) in enumerate(memories, 1):
+                timestamp = metadata.get('timestamp', '')
+                emotion = metadata.get('primary_emotion', '')
+                location = metadata.get('location', '')
+
+                # Memory content
+                if self.use_color:
+                    print(f"  {i}. {Style.BRIGHT}{content}{Style.RESET_ALL}")
+                else:
+                    print(f"  {i}. {content}")
+
+                # Metadata line
+                details = []
+
+                # Time
+                if timestamp:
+                    time_str = self.format_relative_time(timestamp)
+                    details.append(f"🕐 {time_str}")
+
+                # Emotion emoji
+                emotion_emojis = {
+                    'joy': '😊',
+                    'trust': '💚',
+                    'fear': '😨',
+                    'surprise': '😲',
+                    'sadness': '😢',
+                    'disgust': '😖',
+                    'anger': '😠',
+                    'anticipation': '🤔',
+                    'curious': '😊',
+                    'excited': '🤩',
+                    'calm': '😌'
+                }
+                if emotion:
+                    emotion_emoji = emotion_emojis.get(emotion.lower(), '💭')
+                    details.append(f"{emotion_emoji} {emotion.capitalize()}")
+
+                # Star rating
+                stars = self.format_star_rating(similarity)
+                details.append(f"{stars}")
+
+                # Print metadata
+                if self.use_color:
+                    print(f"     {Style.DIM}{' • '.join(details)}{Style.RESET_ALL}\n")
+                else:
+                    print(f"     {' • '.join(details)}\n")
+
+            print()  # Space between types
