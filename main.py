@@ -26,6 +26,9 @@ from world.time_simulation import TimeSimulator
 # Natural language processing
 from nlp.intent_parser import IntentParser
 
+# Phase 7: Always-On mode
+from daemon.always_on import AlwaysOnManager
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO if Config.VERBOSE_LOGGING else logging.WARNING,
@@ -130,6 +133,26 @@ class EeveeLLM:
             logger.warning(f"Intent parser initialization failed: {e}")
             self.intent_parser = None
 
+        # Phase 7: Initialize always-on manager
+        try:
+            if self.time_simulator:
+                self.always_on = AlwaysOnManager(
+                    eevee_state=self.eevee_state,
+                    time_simulator=self.time_simulator,
+                    config={
+                        'simulation_interval': 3600,  # 1 hour
+                        'auto_save_interval': 300,    # 5 minutes
+                        'idle_threshold': 300         # 5 minutes
+                    }
+                )
+                logger.info("Phase 7 always-on manager initialized successfully")
+            else:
+                self.always_on = None
+                logger.warning("Always-on manager disabled (time simulator not available)")
+        except Exception as e:
+            logger.warning(f"Always-on manager initialization failed: {e}")
+            self.always_on = None
+
     def start(self):
         """Start the application"""
         self.ui.clear_screen()
@@ -206,25 +229,56 @@ class EeveeLLM:
         self.main_loop()
 
     def main_loop(self):
-        """Main interaction loop"""
-        while self.running:
+        """Main interaction loop - runs continuously (always-on mode)"""
+        # Show always-on message
+        if self.always_on:
+            self.ui.print_system_message(
+                "\n✨ EeveeLLM is now running in always-on mode!\n"
+                "   Eevee will live their life continuously.\n"
+                "   Check in anytime by typing.\n"
+                "   Type 'maintenance' to shut down for updates.\n"
+            )
+
+        # Main loop - runs forever unless maintenance mode
+        while True:
             try:
+                # Phase 7: Background tasks (if always-on enabled)
+                if self.always_on:
+                    result = self.always_on.update()
+
+                    # If simulation ran in background, Eevee may have moved or done something
+                    if result['simulation_ran'] and result['activities']:
+                        # Don't spam output - just quietly update state
+                        # User can check 'timeline' to see what happened
+                        pass
+
+                # Get user input (with timeout for background tasks)
                 user_input = self.ui.get_input()
 
                 if not user_input:
                     continue
 
-                # Process command
+                # Mark user interaction (for idle detection)
+                if self.always_on:
+                    self.always_on.mark_user_interaction()
+
+                # Check for maintenance mode
+                if user_input.lower() in ['maintenance', 'shutdown']:
+                    if self._confirm_maintenance():
+                        break  # Exit loop
+
+                # Process normal commands
                 self.process_command(user_input)
 
             except KeyboardInterrupt:
                 print()
-                self.ui.print_system_message("Use 'exit' to quit")
+                self.ui.print_system_message("Use 'maintenance' to shut down gracefully")
             except Exception as e:
                 logger.error(f"Error in main loop: {e}", exc_info=True)
                 self.ui.print_error(f"Something went wrong: {e}")
+                # Don't crash - keep running
 
-        # Save and exit
+        # Save and exit (only reached via maintenance mode)
         self.shutdown()
 
     def process_command(self, user_input: str):
@@ -251,7 +305,15 @@ class EeveeLLM:
 
         # Commands
         if command in ["exit", "quit", "q"]:
-            self.running = False
+            # In always-on mode, suggest using 'maintenance' instead
+            if self.always_on:
+                self.ui.print_info(
+                    "💡 EeveeLLM is running in always-on mode.\n"
+                    "   Use 'maintenance' to shut down gracefully."
+                )
+            else:
+                # Fallback for when always-on is disabled
+                self.running = False
 
         elif command == "help":
             # Categorized help system
@@ -313,6 +375,36 @@ class EeveeLLM:
 
         elif command == "debug":
             self.handle_debug_command(args)
+
+        elif command == "uptime":
+            # Show always-on stats
+            if self.always_on:
+                stats = self.always_on.get_stats()
+                uptime = stats['uptime']
+
+                # Format uptime nicely
+                days = uptime.days
+                hours = uptime.seconds // 3600
+                minutes = (uptime.seconds % 3600) // 60
+
+                uptime_str = []
+                if days > 0:
+                    uptime_str.append(f"{days} day{'s' if days != 1 else ''}")
+                if hours > 0:
+                    uptime_str.append(f"{hours} hour{'s' if hours != 1 else ''}")
+                if minutes > 0 or not uptime_str:
+                    uptime_str.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+
+                self.ui.print_info(
+                    f"\n📊 Always-On Stats:\n"
+                    f"   Uptime: {', '.join(uptime_str)}\n"
+                    f"   Background simulations: {stats['total_simulations']}\n"
+                    f"   Auto-saves: {stats['total_saves']}\n"
+                    f"   Idle for: {int(stats['idle_seconds'] / 60)} minutes\n"
+                    f"   Current activity: {self.always_on.get_current_activity_description()}\n"
+                )
+            else:
+                self.ui.print_info("Always-on mode is not enabled.")
 
         elif command == "remember":
             # Phase 3: Memory browser command
@@ -983,6 +1075,30 @@ class EeveeLLM:
         except Exception as e:
             logger.error(f"Error during debug time simulation: {e}", exc_info=True)
             self.ui.print_error(f"Time simulation failed: {e}")
+
+    def _confirm_maintenance(self) -> bool:
+        """
+        Confirm maintenance mode shutdown.
+
+        Returns:
+            True if user confirms, False otherwise
+        """
+        self.ui.print_warning(
+            "\n⚠️  Entering maintenance mode will shut down EeveeLLM.\n"
+            "   Eevee will stop living until you start the app again.\n"
+        )
+
+        # Show uptime stats if available
+        if self.always_on:
+            stats = self.always_on.get_stats()
+            self.ui.print_info(
+                f"\n📊 Current session stats:\n"
+                f"   Uptime: {stats['uptime_hours']:.1f} hours\n"
+                f"   Background simulations: {stats['total_simulations']}\n"
+                f"   Auto-saves: {stats['total_saves']}\n"
+            )
+
+        return self.ui.confirm("Are you sure you want to shut down?", default=False)
 
     def shutdown(self):
         """Save and shutdown"""

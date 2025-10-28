@@ -381,6 +381,13 @@ class TerminalUI:
   debug time [hours]    - Simulate time passage for testing
                          Example: 'debug time 48' simulates 2 days
 
+✨ ALWAYS-ON MODE (Phase 7)
+  uptime                - Show how long Eevee has been living
+                         (Uptime, simulations, saves, current activity)
+
+  maintenance           - Gracefully shut down EeveeLLM
+                         (Only way to exit in always-on mode)
+
 ⚠️  These commands are for developers and testing
 
 💡 Type 'help' to see all categories
