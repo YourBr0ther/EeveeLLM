@@ -88,8 +88,13 @@ class DecisionEngine:
         # Generate decision summary (include conflict info if detected)
         summary = self._generate_summary(vote_scores, consensus, conflict_level, conflict_detected)
 
-        # Extract retrieved memories from winning vote (if any)
-        retrieved_memories = winning_vote.retrieved_memories if hasattr(winning_vote, 'retrieved_memories') else None
+        # Extract retrieved memories from ALL votes (not just winning vote)
+        # Hippocampus often doesn't win but still has the memories!
+        retrieved_memories = None
+        for vote, _ in vote_scores:
+            if hasattr(vote, 'retrieved_memories') and vote.retrieved_memories:
+                retrieved_memories = vote.retrieved_memories
+                break  # Found memories, use them
 
         return CouncilDecision(
             winning_vote=winning_vote,
