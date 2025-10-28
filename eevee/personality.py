@@ -18,52 +18,49 @@ class Personality:
 
     def _load_personality(self):
         """Load personality from database"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM personality WHERE id = 1")
-        row = cursor.fetchone()
+            cursor.execute("SELECT * FROM personality WHERE id = 1")
+            row = cursor.fetchone()
 
-        if row:
-            self.curiosity = row[1]
-            self.bravery = row[2]
-            self.playfulness = row[3]
-            self.loyalty = row[4]
-            self.independence = row[5]
-        else:
-            # Default values if not found
-            from config import Config
-            self.curiosity = Config.PERSONALITY_CURIOSITY
-            self.bravery = Config.PERSONALITY_BRAVERY
-            self.playfulness = Config.PERSONALITY_PLAYFULNESS
-            self.loyalty = Config.PERSONALITY_LOYALTY
-            self.independence = Config.PERSONALITY_INDEPENDENCE
-
-        conn.close()
+            if row:
+                self.curiosity = row[1]
+                self.bravery = row[2]
+                self.playfulness = row[3]
+                self.loyalty = row[4]
+                self.independence = row[5]
+            else:
+                # Default values if not found
+                from config import Config
+                self.curiosity = Config.PERSONALITY_CURIOSITY
+                self.bravery = Config.PERSONALITY_BRAVERY
+                self.playfulness = Config.PERSONALITY_PLAYFULNESS
+                self.loyalty = Config.PERSONALITY_LOYALTY
+                self.independence = Config.PERSONALITY_INDEPENDENCE
 
     def save(self):
         """Save personality to database"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            UPDATE personality SET
-                curiosity = ?,
-                bravery = ?,
-                playfulness = ?,
-                loyalty = ?,
-                independence = ?
-            WHERE id = 1
-        """, (
-            self.curiosity,
-            self.bravery,
-            self.playfulness,
-            self.loyalty,
-            self.independence
-        ))
+            cursor.execute("""
+                UPDATE personality SET
+                    curiosity = ?,
+                    bravery = ?,
+                    playfulness = ?,
+                    loyalty = ?,
+                    independence = ?
+                WHERE id = 1
+            """, (
+                self.curiosity,
+                self.bravery,
+                self.playfulness,
+                self.loyalty,
+                self.independence
+            ))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     def adjust_trait(self, trait: str, delta: int):
         """
