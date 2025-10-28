@@ -208,7 +208,7 @@ class TerminalUI:
         Print help message - categorized for easier navigation.
 
         Args:
-            category: Optional category to show (basic, world, items, memory, all)
+            category: Optional category to show (basic, world, items, memory, system, debug, all)
         """
         if not category or category == "all":
             # Show main help with category list
@@ -217,26 +217,31 @@ class TerminalUI:
 ║                        EEVEE COMMAND HELP                            ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-💡 TIP: Talk naturally! "How are you?" works just like 'stats'
+💡 TIP: Talk naturally! "How are you?" → stats (no table, just chat)
+        Type exact command "stats" → shows full stats table + response
 
 📚 HELP CATEGORIES (Type 'help <category>' for details):
    • basic    - Essential commands to get started
    • world    - Exploration and travel
    • items    - Inventory and item management
-   • memory   - Viewing and searching memories
+   • memory   - Memories and timeline (what Eevee remembers)
+   • system   - Always-on mode, uptime, maintenance
    • debug    - Developer/testing commands
    • all      - Show everything
 
 🎯 QUICK START:
-   "Hello!"           - Greet Eevee
-   "How are you?"     - Check Eevee's status
-   "Let's play!"      - Play with Eevee
-   "Where are we?"    - See current location
+   "Hello!"            - Greet Eevee
+   "How are you?"      - Chat about Eevee's status (natural)
+   stats               - Show full stats table
+   "Let's play!"       - Play with Eevee
+   "Where are we?"     - See current location
    "What do you have?" - Check inventory
 
-⚙️  SYSTEM:
-   help               - Show this help message
-   exit / quit        - Save and quit
+✨ ALWAYS-ON MODE:
+   EeveeLLM runs continuously - Eevee lives 24/7!
+   • Background simulation every hour
+   • Auto-save every 5 minutes
+   • Check in anytime by typing
 
 📖 For 80+ natural language examples, see: NATURAL_LANGUAGE_COMMANDS.md
             """
@@ -360,6 +365,52 @@ class TerminalUI:
             """
             print(help_text)
 
+        elif category == "system":
+            help_text = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                       SYSTEM & ALWAYS-ON MODE                        ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+✨ ALWAYS-ON MODE (Phase 7):
+  EeveeLLM runs continuously - Eevee lives 24/7!
+  • Background simulation every hour (Eevee explores, sleeps, plays)
+  • Auto-save every 5 minutes (never lose progress)
+  • Check in anytime by typing
+
+📊 UPTIME & STATS
+  uptime                - Show how long Eevee has been living
+                         • Total uptime (days, hours, minutes)
+                         • Background simulations run
+                         • Auto-saves performed
+                         • How long since last interaction
+                         • What Eevee is currently doing
+
+🔧 SHUTDOWN & MAINTENANCE
+  maintenance           - Gracefully shut down EeveeLLM
+  shutdown              - Same as maintenance
+
+  ⚠️  This is the ONLY way to exit in always-on mode!
+      Shows session stats and asks for confirmation.
+
+  exit / quit           - Suggests using 'maintenance' instead
+
+💡 USAGE EXAMPLE:
+  > uptime
+  📊 Always-On Stats:
+     Uptime: 2 hours, 15 minutes
+     Background simulations: 2
+     Auto-saves: 27
+     Idle for: 5 minutes
+     Current activity: napping peacefully in the garden
+
+  > maintenance
+  ⚠️  Entering maintenance mode will shut down EeveeLLM...
+  Are you sure? (y/n):
+
+💡 Type 'help' to see all categories
+            """
+            print(help_text)
+
         elif category == "debug":
             help_text = """
 ╔══════════════════════════════════════════════════════════════════════╗
@@ -377,22 +428,23 @@ class TerminalUI:
                          (Shows memory formation in real-time)
 
   debug state           - Show detailed internal state
+                         (Full dump of Eevee's internal state)
 
   debug time [hours]    - Simulate time passage for testing
                          Example: 'debug time 48' simulates 2 days
 
-✨ ALWAYS-ON MODE (Phase 7)
-  uptime                - Show how long Eevee has been living
-                         (Uptime, simulations, saves, current activity)
-
-  maintenance           - Gracefully shut down EeveeLLM
-                         (Only way to exit in always-on mode)
-
 ⚠️  These commands are for developers and testing
 
+💡 Type 'help system' for always-on mode & uptime commands
 💡 Type 'help' to see all categories
             """
             print(help_text)
+
+        else:
+            # Unknown category
+            self.print_warning(f"Unknown help category: '{category}'")
+            print("\n📚 Available categories: basic, world, items, memory, system, debug, all")
+            print("💡 Type 'help' to see the main help menu")
 
     def print_welcome(self):
         """Print welcome message"""
