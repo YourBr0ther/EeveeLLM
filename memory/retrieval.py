@@ -42,7 +42,7 @@ class MemoryRetriever:
         self.vector_store = vector_store
         self.memory_retrieval_count = config.get('memory_retrieval_count', 5)
         self.min_significance = config.get('memory_significance_threshold', 6.0)
-        self.working_memory = WorkingMemory(max_size=config.get('max_working_memory', 10))
+        self.working_memory = WorkingMemory(max_size=config.get('max_working_memory', 100))  # Fixed: was 10, now 100
 
     def retrieve_relevant_memories(
         self,

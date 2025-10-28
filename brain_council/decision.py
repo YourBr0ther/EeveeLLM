@@ -2,8 +2,8 @@
 Brain Council - Decision Making System
 Handles voting, conflict resolution, and final decision selection
 """
-from typing import List, Dict, Any, Tuple
-from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple, Optional
+from dataclasses import dataclass, field
 
 from .regions import RegionVote
 
@@ -18,7 +18,7 @@ class CouncilDecision:
     consensus_level: float  # 0.0 to 1.0, how unified was the decision
     conflict_level: float = 0.0  # Phase 6: 0.0 to 1.0, how much conflict detected (ACC)
     conflict_detected: bool = False  # Phase 6: Whether ACC detected significant conflict
-    retrieved_memories: List[Tuple[str, Dict[str, Any], float]] = None  # Retrieved memories from Hippocampus
+    retrieved_memories: Optional[List[Tuple[str, Dict[str, Any], float]]] = field(default=None)  # Retrieved memories from Hippocampus
 
 
 class DecisionEngine:

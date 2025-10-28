@@ -3,8 +3,8 @@ Brain Council - Individual Brain Regions
 Each region represents a different aspect of decision-making
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple, List
-from dataclasses import dataclass
+from typing import Dict, Any, Tuple, List, Optional
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -17,7 +17,7 @@ class RegionVote:
     emotional_weight: float  # 0.0 to 1.0
     primary_emotion: str = "neutral"  # Phase 6: Primary emotion (joy, fear, sadness, etc.)
     arousal_level: float = 0.5  # Phase 6: How intense is this emotion (0.0 = calm, 1.0 = intense)
-    retrieved_memories: List[Tuple[str, Dict[str, Any], float]] = None  # Memories retrieved by this region (Hippocampus)
+    retrieved_memories: Optional[List[Tuple[str, Dict[str, Any], float]]] = field(default=None)  # Memories retrieved by this region (Hippocampus)
 
 
 class BrainRegion(ABC):

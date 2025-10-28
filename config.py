@@ -39,7 +39,7 @@ class Config:
 
     # Memory Settings
     MEMORY_SIGNIFICANCE_THRESHOLD: float = 6.0  # 0-10 scale
-    MAX_WORKING_MEMORY: int = 10
+    MAX_WORKING_MEMORY: int = 100  # Enhanced to 100 interactions (7-day retention)
     MEMORY_RETRIEVAL_COUNT: int = 5
     FORGETTING_RATE: float = 0.01
 
