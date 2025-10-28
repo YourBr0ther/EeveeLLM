@@ -435,12 +435,14 @@ class WorkingMemory:
         """Clear working memory"""
         self.memories.clear()
 
-    def to_context_string(self, recent_count: int = 10) -> str:
+    def to_context_string(self, recent_count: int = 25) -> str:
         """
         Convert working memory to a context string for brain council
 
         Args:
-            recent_count: Number of recent memories to include (default: 10)
+            recent_count: Number of recent memories to include (default: 25)
+
+        Note: Increased from 10 to 25 for better conversation continuity
         """
         self._cleanup()
         if not self.memories:

@@ -946,7 +946,10 @@ class EeveeLLM:
 
         try:
             # Add to working memory (short-term)
-            interaction_summary = f"{user_input[:50]}... -> {eevee_response[:50]}..."
+            # Increased from 50 to 150 chars for better context retention
+            user_part = user_input if len(user_input) < 150 else f"{user_input[:150]}..."
+            eevee_part = eevee_response if len(eevee_response) < 150 else f"{eevee_response[:150]}..."
+            interaction_summary = f"{user_part} -> {eevee_part}"
             self.memory_retriever.add_to_working_memory(interaction_summary)
 
             # Process for long-term memory formation
