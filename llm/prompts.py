@@ -137,10 +137,14 @@ Response:"""
 
         # Build memory context section
         memory_context = ""
-        if retrieved_memories and len(retrieved_memories) > 0:
+        has_memories = retrieved_memories and len(retrieved_memories) > 0
+
+        if has_memories:
             memory_context = "\nRelevant memories:\n"
             for i, (content, metadata, relevance) in enumerate(retrieved_memories[:3], 1):  # Top 3 memories
                 memory_context += f"- {content}\n"
+        else:
+            memory_context = "\n(No relevant past memories for this situation)\n"
 
         # Phase 7.5: Build current session context section
         session_context = ""
@@ -165,7 +169,8 @@ Based on your internal decision, emotional state, and memories, respond naturall
 - Include body language in *asterisks* (e.g., *tail wagging*, *ears droop*)
 - Show the emotion: {emotion}
 - Reflect the decision: {decision}
-- If you have relevant memories, use them to inform your response
+- IMPORTANT: Only reference memories if they appear in "Relevant memories" above
+- Do NOT invent or assume memories that are not explicitly listed
 - Keep response to 2-4 sentences
 - Be authentic and genuine
 
