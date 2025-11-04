@@ -161,6 +161,20 @@ class EeveeLLM:
             logger.warning(f"Always-on manager initialization failed: {e}")
             self.always_on = None
 
+        # Phase 8: Initialize proactive interaction manager
+        try:
+            from eevee.proactive import ProactiveManager
+
+            self.proactive_manager = ProactiveManager(config={
+                'proactive_level': Config.__dict__.get('PROACTIVE_LEVEL', 'normal'),
+                'min_absence_for_greeting': 1800,  # 30 minutes
+                'max_proactive_events_per_hour': 3
+            })
+            logger.info("Phase 8 proactive interaction manager initialized successfully")
+        except Exception as e:
+            logger.warning(f"Proactive manager initialization failed: {e}")
+            self.proactive_manager = None
+
     def start(self):
         """Start the application"""
         self.ui.clear_screen()
@@ -260,6 +274,20 @@ class EeveeLLM:
                         # User can check 'timeline' to see what happened
                         pass
 
+                # Phase 8: Check for proactive events
+                if self.proactive_manager:
+                    context = self._build_context()
+                    proactive_event = self.proactive_manager.check_for_proactive_events(
+                        self.eevee_state, context
+                    )
+
+                    if proactive_event:
+                        # Display proactive message
+                        self._handle_proactive_event(proactive_event)
+                        # Mark user as absent after proactive event to prevent immediate repeat
+                        if self.proactive_manager:
+                            self.proactive_manager.mark_user_absence()
+
                 # Get user input (with timeout for background tasks)
                 # Show natural language hint for first few interactions
                 show_hint = self.interaction_count < 3
@@ -268,9 +296,11 @@ class EeveeLLM:
                 if not user_input:
                     continue
 
-                # Mark user interaction (for idle detection)
+                # Mark user interaction (for idle detection and proactive events)
                 if self.always_on:
                     self.always_on.mark_user_interaction()
+                if self.proactive_manager:
+                    self.proactive_manager.mark_user_interaction()
 
                 # Check for maintenance mode
                 if user_input.lower() in ['maintenance', 'shutdown']:
@@ -1165,6 +1195,53 @@ class EeveeLLM:
             )
 
         return self.ui.confirm("Are you sure you want to shut down?", default=False)
+
+    def _handle_proactive_event(self, proactive_event):
+        """
+        Handle a proactive event from Eevee.
+
+        Args:
+            proactive_event: ProactiveEvent object to handle
+        """
+        try:
+            from eevee.proactive import ProactiveEventType
+
+            # Display the proactive message with appropriate formatting
+            if proactive_event.event_type == ProactiveEventType.GREETING:
+                self.ui.print_eevee_response(f"🎉 {proactive_event.message}")
+            elif proactive_event.event_type == ProactiveEventType.NEED_EXPRESSION:
+                if proactive_event.urgency >= 0.8:
+                    self.ui.print_eevee_response(f"😰 {proactive_event.message}")
+                else:
+                    self.ui.print_eevee_response(f"😔 {proactive_event.message}")
+            elif proactive_event.event_type == ProactiveEventType.EMOTIONAL_SHARE:
+                self.ui.print_eevee_response(f"💭 {proactive_event.message}")
+            elif proactive_event.event_type == ProactiveEventType.ATTENTION_SEEKING:
+                self.ui.print_eevee_response(f"👋 {proactive_event.message}")
+            else:
+                # Generic handling for other event types
+                self.ui.print_eevee_response(proactive_event.message)
+
+            # Execute the proactive event (updates statistics)
+            self.proactive_manager.execute_proactive_event(proactive_event)
+
+            # Log the event
+            logger.info(f"Proactive event executed: {proactive_event.event_type.value} (urgency: {proactive_event.urgency})")
+
+            # If this is a high-urgency need expression, offer helpful hints
+            if (proactive_event.event_type == ProactiveEventType.NEED_EXPRESSION and
+                proactive_event.urgency >= 0.7):
+                need_type = proactive_event.context.get('need_type')
+                if need_type == 'hunger':
+                    self.ui.print_info("💡 Try: 'give Oran Berry' or 'use Pecha Berry' to feed Eevee")
+                elif need_type == 'energy':
+                    self.ui.print_info("💡 Try: 'go Hidden Den' for a safe place to rest")
+                elif need_type == 'happiness':
+                    self.ui.print_info("💡 Try: 'pet' or 'play' to cheer up Eevee")
+
+        except Exception as e:
+            logger.error(f"Error handling proactive event: {e}", exc_info=True)
+            # Don't crash - just log the error
 
     def shutdown(self):
         """Save and shutdown"""

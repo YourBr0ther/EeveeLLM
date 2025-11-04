@@ -91,6 +91,9 @@ class Config:
     REDUCE_EMOJIS: bool = False      # Use fewer emojis for screen readers
     HIGH_CONTRAST: bool = False      # Use high contrast color scheme
 
+    # Proactive Interaction Settings
+    PROACTIVE_LEVEL: str = "normal"  # quiet, normal, chatty, very_chatty
+
     @classmethod
     def load_from_file(cls, config_path: str = "config.yaml") -> None:
         """Load configuration from YAML file"""
