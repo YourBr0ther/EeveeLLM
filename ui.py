@@ -764,11 +764,17 @@ Until next time, trainer!
 
         # Group items and count quantities
         item_counts = {}
+        invalid_items = []
         for item_id in inventory_items:
-            if item_id in item_counts:
-                item_counts[item_id] += 1
-            else:
-                item_counts[item_id] = 1
+            # Check if item_id is hashable before using as dict key
+            try:
+                if item_id in item_counts:
+                    item_counts[item_id] += 1
+                else:
+                    item_counts[item_id] = 1
+            except TypeError:
+                # Unhashable type (like dict, list) - add to invalid items
+                invalid_items.append(item_id)
 
         # Display items compactly with safe ItemManager usage
         display_items = []
@@ -795,6 +801,10 @@ Until next time, trainer!
                 # Fallback without ItemManager
                 qty_str = f" × {count}" if count > 1 else ""
                 display_items.append(f"{item_id}{qty_str}")
+
+        # Add invalid items (unhashable types)
+        for item in invalid_items:
+            display_items.append(f"[Invalid: {type(item).__name__}]")
 
         # Print in rows of 3
         for i in range(0, len(display_items), 3):
@@ -922,11 +932,30 @@ Until next time, trainer!
             Human-friendly string like "2 hours ago", "Yesterday", etc.
         """
         from datetime import datetime, timedelta
+        import logging
+
+        # Validate input
+        if timestamp_str is None:
+            logging.warning("format_relative_time received None timestamp")
+            return "Unknown time"
+
+        if not isinstance(timestamp_str, str):
+            logging.warning(f"format_relative_time expected string, got {type(timestamp_str)}")
+            return "Unknown time"
 
         try:
             timestamp = datetime.fromisoformat(timestamp_str)
+        except (ValueError, TypeError) as e:
+            logging.warning(f"Invalid timestamp format '{timestamp_str}': {e}")
+            return "Unknown time"
+
+        try:
             now = datetime.now()
             delta = now - timestamp
+
+            # Handle future timestamps
+            if delta.total_seconds() < 0:
+                return "In the future"
 
             # Less than a minute
             if delta.total_seconds() < 60:
@@ -965,7 +994,9 @@ Until next time, trainer!
                 years = delta.days // 365
                 return f"{years} year{'s' if years != 1 else ''} ago"
 
-        except Exception:
+        except Exception as e:
+            # This should never happen - if it does, we want to know!
+            logging.error(f"Unexpected error in time calculation: {e}", exc_info=True)
             return "Unknown time"
 
     def format_star_rating(self, relevance: float) -> str:
@@ -978,6 +1009,19 @@ Until next time, trainer!
         Returns:
             Star rating string like "★★★★☆"
         """
+        import logging
+
+        # Validate input
+        if relevance is None:
+            logging.warning("Star rating received None relevance")
+            return "☆☆☆☆☆"  # All empty stars
+
+        try:
+            relevance = float(relevance)  # Convert if needed
+        except (ValueError, TypeError) as e:
+            logging.warning(f"Invalid relevance value '{relevance}': {e}")
+            return "☆☆☆☆☆"
+
         # Normalize to 0-5 scale (relevance scores can be > 1.0)
         normalized = min(5, max(0, relevance * 5))
         filled_stars = int(normalized)
@@ -998,7 +1042,23 @@ Until next time, trainer!
 
         # Group by memory type
         memories_by_type = {}
-        for content, metadata, similarity in results:
+        for item in results:
+            # Validate tuple structure
+            if not isinstance(item, (tuple, list)) or len(item) != 3:
+                continue
+
+            content, metadata, similarity = item
+
+            # Validate each component
+            if content is None:
+                continue
+
+            if metadata is None:
+                metadata = {}  # Use empty dict as fallback
+
+            if similarity is None:
+                similarity = 0.0  # Use 0.0 as fallback
+
             memory_type = metadata.get('memory_type', 'unknown')
             if memory_type not in memories_by_type:
                 memories_by_type[memory_type] = []
