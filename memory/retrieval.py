@@ -61,6 +61,19 @@ class MemoryRetriever:
         Returns:
             List of (memory_content, metadata, relevance_score) tuples
         """
+        # Input validation to prevent crashes
+        if not isinstance(situation, str):
+            logger.warning(f"Invalid situation type: {type(situation)}")
+            return []
+
+        if situation.strip() == "":
+            logger.warning("Empty situation string provided")
+            return []
+
+        if not isinstance(context, dict):
+            logger.warning(f"Invalid context type: {type(context)}")
+            context = {}  # Use empty dict as fallback
+
         try:
             all_memories = []
 
@@ -74,13 +87,39 @@ class MemoryRetriever:
                 min_significance=self.min_significance - 2.0  # Retrieve threshold: 6.0 - 2.0 = 4.0
             )
 
-            for content, metadata, similarity in semantic_results:
-                relevance = self._calculate_relevance(
-                    similarity=similarity,
-                    metadata=metadata,
-                    context=context
-                )
-                all_memories.append((content, metadata, relevance))
+            for result in semantic_results:
+                # Validate result structure
+                if not isinstance(result, (tuple, list)) or len(result) < 3:
+                    logger.warning(f"Invalid semantic result structure: {result}")
+                    continue
+
+                content, metadata, similarity = result
+
+                # Validate content
+                if not isinstance(content, str) or not content.strip():
+                    logger.warning("Invalid or empty memory content")
+                    continue
+
+                # Validate metadata
+                if not isinstance(metadata, dict):
+                    logger.warning(f"Invalid metadata type: {type(metadata)}")
+                    metadata = {}
+
+                # Validate similarity
+                if not isinstance(similarity, (int, float)):
+                    logger.warning(f"Invalid similarity score: {similarity}")
+                    similarity = 0.0
+
+                try:
+                    relevance = self._calculate_relevance(
+                        similarity=similarity,
+                        metadata=metadata,
+                        context=context
+                    )
+                    all_memories.append((content, metadata, relevance))
+                except Exception as e:
+                    logger.warning(f"Error calculating relevance: {e}")
+                    continue
 
             # Track seen memory IDs to avoid duplicates
             seen_memory_ids = set()
@@ -91,47 +130,93 @@ class MemoryRetriever:
 
             # 2. Location-based memories - Get memories from current location
             current_location = context.get('current_location')
-            if current_location:
-                location_results = self.vector_store.retrieve_by_location(
-                    location=current_location,
-                    n_results=3
-                )
+            if current_location and isinstance(current_location, str):
+                try:
+                    location_results = self.vector_store.retrieve_by_location(
+                        location=current_location,
+                        n_results=3
+                    )
 
-                for content, metadata, similarity in location_results:
-                    # Fix: Check by memory_id instead of content
-                    memory_id = metadata.get('memory_id')
-                    if not memory_id or memory_id not in seen_memory_ids:
-                        relevance = self._calculate_relevance(
-                            similarity=similarity,
-                            metadata=metadata,
-                            context=context,
-                            location_bonus=0.2
-                        )
-                        all_memories.append((content, metadata, relevance))
-                        if memory_id:
-                            seen_memory_ids.add(memory_id)
+                    for result in location_results:
+                        # Validate location result structure
+                        if not isinstance(result, (tuple, list)) or len(result) < 3:
+                            logger.warning(f"Invalid location result structure: {result}")
+                            continue
+
+                        content, metadata, similarity = result
+
+                        # Validate content and metadata (same as semantic results)
+                        if not isinstance(content, str) or not content.strip():
+                            continue
+                        if not isinstance(metadata, dict):
+                            metadata = {}
+                        if not isinstance(similarity, (int, float)):
+                            similarity = 0.0
+
+                        # Fix: Check by memory_id instead of content
+                        memory_id = metadata.get('memory_id')
+                        if not memory_id or memory_id not in seen_memory_ids:
+                            try:
+                                relevance = self._calculate_relevance(
+                                    similarity=similarity,
+                                    metadata=metadata,
+                                    context=context,
+                                    location_bonus=0.2
+                                )
+                            except Exception as e:
+                                logger.warning(f"Error calculating location relevance: {e}")
+                                continue
+
+                            all_memories.append((content, metadata, relevance))
+                            if memory_id:
+                                seen_memory_ids.add(memory_id)
+                except Exception as e:
+                    logger.warning(f"Error retrieving location memories: {e}")
 
             # 3. Emotional context - Get memories with similar emotions
             primary_emotion = context.get('primary_emotion')
-            if primary_emotion:
-                emotion_results = self.vector_store.retrieve_by_emotion(
-                    emotion=primary_emotion,
-                    n_results=2
-                )
+            if primary_emotion and isinstance(primary_emotion, str):
+                try:
+                    emotion_results = self.vector_store.retrieve_by_emotion(
+                        emotion=primary_emotion,
+                        n_results=2
+                    )
 
-                for content, metadata, similarity in emotion_results:
-                    # Fix: Check by memory_id instead of content
-                    memory_id = metadata.get('memory_id')
-                    if not memory_id or memory_id not in seen_memory_ids:
-                        relevance = self._calculate_relevance(
-                            similarity=similarity,
-                            metadata=metadata,
-                            context=context,
-                            emotion_bonus=0.15
-                        )
-                        all_memories.append((content, metadata, relevance))
-                        if memory_id:
-                            seen_memory_ids.add(memory_id)
+                    for result in emotion_results:
+                        # Validate emotion result structure
+                        if not isinstance(result, (tuple, list)) or len(result) < 3:
+                            logger.warning(f"Invalid emotion result structure: {result}")
+                            continue
+
+                        content, metadata, similarity = result
+
+                        # Validate content and metadata (same validation as before)
+                        if not isinstance(content, str) or not content.strip():
+                            continue
+                        if not isinstance(metadata, dict):
+                            metadata = {}
+                        if not isinstance(similarity, (int, float)):
+                            similarity = 0.0
+
+                        # Fix: Check by memory_id instead of content
+                        memory_id = metadata.get('memory_id')
+                        if not memory_id or memory_id not in seen_memory_ids:
+                            try:
+                                relevance = self._calculate_relevance(
+                                    similarity=similarity,
+                                    metadata=metadata,
+                                    context=context,
+                                    emotion_bonus=0.15
+                                )
+                            except Exception as e:
+                                logger.warning(f"Error calculating emotion relevance: {e}")
+                                continue
+
+                            all_memories.append((content, metadata, relevance))
+                            if memory_id:
+                                seen_memory_ids.add(memory_id)
+                except Exception as e:
+                    logger.warning(f"Error retrieving emotion memories: {e}")
 
             # Sort by relevance score
             all_memories.sort(key=lambda x: x[2], reverse=True)
@@ -314,8 +399,20 @@ class MemoryRetriever:
         Returns:
             float: Relevance score (0-1+)
         """
+        # Input validation for robustness
+        if not isinstance(similarity, (int, float)):
+            similarity = 0.0
+        if not isinstance(metadata, dict):
+            metadata = {}
+        if not isinstance(context, dict):
+            context = {}
+        if not isinstance(location_bonus, (int, float)):
+            location_bonus = 0.0
+        if not isinstance(emotion_bonus, (int, float)):
+            emotion_bonus = 0.0
+
         # Start with similarity
-        relevance = similarity
+        relevance = max(0.0, float(similarity))  # Ensure non-negative
 
         # Recency bonus - memories from last 24 hours get boost
         timestamp_str = metadata.get('timestamp', '')

@@ -686,17 +686,37 @@ Until next time, trainer!
 
         if state.inventory:
             print(f" ({len(state.inventory)} items)")
-            # Show first 3 items as preview
-            from world.items import ItemManager
-            preview_items = []
-            for item_id in state.inventory[:3]:
-                item_def = ItemManager.get_item(item_id)
-                if item_def:
-                    preview_items.append(f"{item_def.emoji} {item_def.name}")
-                else:
-                    preview_items.append(item_id)
+            # Show first 3 items as preview with import safety
+            try:
+                from world.items import ItemManager
+                preview_items = []
+                for item_id in state.inventory[:3]:
+                    # Validate item_id type
+                    if not isinstance(item_id, str):
+                        preview_items.append(f"[Invalid: {type(item_id).__name__}]")
+                        continue
 
-            print("  " + "  •  ".join(preview_items))
+                    try:
+                        item_def = ItemManager.get_item(item_id)
+                        if item_def:
+                            preview_items.append(f"{item_def.emoji} {item_def.name}")
+                        else:
+                            preview_items.append(item_id)
+                    except Exception:
+                        preview_items.append(f"{item_id} (error)")
+
+                if preview_items:
+                    print("  " + "  •  ".join(preview_items))
+            except ImportError:
+                # Fallback if ItemManager can't be imported
+                preview_items = []
+                for item_id in state.inventory[:3]:
+                    if isinstance(item_id, str):
+                        preview_items.append(item_id)
+                    else:
+                        preview_items.append(f"[{type(item_id).__name__}]")
+                if preview_items:
+                    print("  " + "  •  ".join(preview_items))
 
             if len(state.inventory) > 3:
                 if self.use_color:
@@ -722,11 +742,17 @@ Until next time, trainer!
         Args:
             inventory_items: List of item IDs/objects
         """
-        from world.items import ItemManager
-
         if not inventory_items:
             self.print_message("\n📦 Inventory is empty\n")
             return
+
+        # Try importing ItemManager with fallback
+        try:
+            from world.items import ItemManager
+            has_item_manager = True
+        except ImportError:
+            ItemManager = None
+            has_item_manager = False
 
         # Header
         if self.use_color:
@@ -744,14 +770,29 @@ Until next time, trainer!
             else:
                 item_counts[item_id] = 1
 
-        # Display items compactly
+        # Display items compactly with safe ItemManager usage
         display_items = []
         for item_id, count in item_counts.items():
-            item_def = ItemManager.get_item(item_id)
-            if item_def:
+            # Validate item_id type
+            if not isinstance(item_id, str):
                 qty_str = f" × {count}" if count > 1 else ""
-                display_items.append(f"{item_def.emoji} {item_def.name}{qty_str}")
+                display_items.append(f"[Invalid: {type(item_id).__name__}]{qty_str}")
+                continue
+
+            if has_item_manager:
+                try:
+                    item_def = ItemManager.get_item(item_id)
+                    if item_def:
+                        qty_str = f" × {count}" if count > 1 else ""
+                        display_items.append(f"{item_def.emoji} {item_def.name}{qty_str}")
+                    else:
+                        qty_str = f" × {count}" if count > 1 else ""
+                        display_items.append(f"{item_id}{qty_str}")
+                except Exception:
+                    qty_str = f" × {count}" if count > 1 else ""
+                    display_items.append(f"{item_id} (error){qty_str}")
             else:
+                # Fallback without ItemManager
                 qty_str = f" × {count}" if count > 1 else ""
                 display_items.append(f"{item_id}{qty_str}")
 
@@ -776,11 +817,17 @@ Until next time, trainer!
         Args:
             inventory_items: List of item IDs/objects
         """
-        from world.items import ItemManager
-
         if not inventory_items:
             self.print_message("\n📦 Inventory is empty\n")
             return
+
+        # Try importing ItemManager with fallback
+        try:
+            from world.items import ItemManager
+            has_item_manager = True
+        except ImportError:
+            ItemManager = None
+            has_item_manager = False
 
         # Header
         if self.use_color:
@@ -790,20 +837,42 @@ Until next time, trainer!
 
         print("━" * 70)
 
-        # Group by type
+        # Group by type with safe ItemManager usage
         items_by_type = {}
         for item_id in inventory_items:
-            item_def = ItemManager.get_item(item_id)
-            if item_def:
-                item_type = item_def.item_type.value
-                if item_type not in items_by_type:
-                    items_by_type[item_type] = []
-                items_by_type[item_type].append(item_def)
+            # Validate item_id type
+            if not isinstance(item_id, str):
+                if "invalid" not in items_by_type:
+                    items_by_type["invalid"] = []
+                items_by_type["invalid"].append(f"[{type(item_id).__name__}]")
+                continue
+
+            if has_item_manager:
+                try:
+                    item_def = ItemManager.get_item(item_id)
+                    if item_def:
+                        try:
+                            item_type = item_def.item_type.value
+                        except AttributeError:
+                            item_type = "unknown"
+                        if item_type not in items_by_type:
+                            items_by_type[item_type] = []
+                        items_by_type[item_type].append(item_def)
+                    else:
+                        # Unknown item
+                        if "unknown" not in items_by_type:
+                            items_by_type["unknown"] = []
+                        items_by_type["unknown"].append(item_id)
+                except Exception:
+                    # Error getting item
+                    if "error" not in items_by_type:
+                        items_by_type["error"] = []
+                    items_by_type["error"].append(f"{item_id} (error)")
             else:
-                # Unknown item
-                if "unknown" not in items_by_type:
-                    items_by_type["unknown"] = []
-                items_by_type["unknown"].append(item_id)
+                # Fallback without ItemManager
+                if "items" not in items_by_type:
+                    items_by_type["items"] = []
+                items_by_type["items"].append(item_id)
 
         # Display by category
         for category, items in sorted(items_by_type.items()):
@@ -815,17 +884,25 @@ Until next time, trainer!
 
             for item in items:
                 if isinstance(item, str):
-                    # Unknown item
+                    # Unknown item or string item
                     self.print_message(f"  • {item}")
                 else:
-                    # Catalog item
-                    consumable_str = "" if item.consumable else " (Keepsake)"
-                    if self.use_color:
-                        print(f"  {item.emoji} {Style.BRIGHT}{item.name}{Style.RESET_ALL}{consumable_str}")
-                        print(f"     {Style.DIM}{item.description}{Style.RESET_ALL}")
-                    else:
-                        print(f"  {item.emoji} {item.name}{consumable_str}")
-                        print(f"     {item.description}")
+                    # Catalog item - safe access to attributes
+                    try:
+                        name = getattr(item, 'name', 'Unknown Item')
+                        emoji = getattr(item, 'emoji', '•')
+                        description = getattr(item, 'description', 'No description available')
+                        consumable = getattr(item, 'consumable', True)
+
+                        consumable_str = "" if consumable else " (Keepsake)"
+                        if self.use_color:
+                            print(f"  {emoji} {Style.BRIGHT}{name}{Style.RESET_ALL}{consumable_str}")
+                            print(f"     {Style.DIM}{description}{Style.RESET_ALL}")
+                        else:
+                            print(f"  {emoji} {name}{consumable_str}")
+                            print(f"     {description}")
+                    except Exception as e:
+                        self.print_message(f"  • Error displaying item: {e}")
 
         # Footer
         print("\n" + "━" * 70)
@@ -1024,6 +1101,15 @@ Until next time, trainer!
             self.print_info("No significant activities occurred while you were away.")
             return
 
+        # Validate input types to prevent crashes
+        if not isinstance(activities, list):
+            self.print_error("Timeline data format error - invalid activities list")
+            return
+
+        if not isinstance(hours_elapsed, (int, float)) or hours_elapsed < 0:
+            self.print_error("Timeline data format error - invalid time duration")
+            return
+
         days = hours_elapsed / 24
 
         # Header
@@ -1034,10 +1120,13 @@ Until next time, trainer!
 
         print("━" * 70 + "\n")
 
-        # Count activities by type
+        # Count activities by type with defensive checks
         activity_counts = {}
         for activity in activities:
-            activity_type = activity.type
+            # Validate activity object has required attributes
+            if not hasattr(activity, 'type'):
+                continue  # Skip malformed activities
+            activity_type = getattr(activity, 'type', 'unknown')
             activity_counts[activity_type] = activity_counts.get(activity_type, 0) + 1
 
         # Activity type emojis
@@ -1099,36 +1188,61 @@ Until next time, trainer!
             else:
                 print("🎁 Items Found:")
 
-            from world.items import ItemManager
-            item_counts = {}
-            for item_id in items_found:
-                item_counts[item_id] = item_counts.get(item_id, 0) + 1
+            try:
+                from world.items import ItemManager
+                item_counts = {}
+                for item_id in items_found:
+                    item_counts[item_id] = item_counts.get(item_id, 0) + 1
 
-            for item_id, count in item_counts.items():
-                item_def = ItemManager.get_item(item_id)
-                if item_def:
-                    qty_str = f" × {count}" if count > 1 else ""
-                    print(f"  {item_def.emoji} {item_def.name}{qty_str}")
-                else:
-                    qty_str = f" × {count}" if count > 1 else ""
-                    print(f"  {item_id}{qty_str}")
+                for item_id, count in item_counts.items():
+                    try:
+                        item_def = ItemManager.get_item(item_id)
+                        if item_def:
+                            qty_str = f" × {count}" if count > 1 else ""
+                            print(f"  {item_def.emoji} {item_def.name}{qty_str}")
+                        else:
+                            qty_str = f" × {count}" if count > 1 else ""
+                            print(f"  {item_id}{qty_str}")
+                    except Exception:
+                        qty_str = f" × {count}" if count > 1 else ""
+                        print(f"  {item_id}{qty_str}")
+            except ImportError:
+                # Fallback if ItemManager can't be imported
+                for item_id in items_found:
+                    print(f"  {item_id}")
 
-        # Memorable moments (significant activities)
-        significant_activities = [a for a in activities if getattr(a, 'significance', 0) > 7.0]
-        if significant_activities:
-            print()
-            if self.use_color:
-                print(f"{Fore.YELLOW}{Style.BRIGHT}💭 Memorable Moments:{Style.RESET_ALL}")
-            else:
-                print("💭 Memorable Moments:")
-
-            # Show top 3 most significant
-            sorted_activities = sorted(significant_activities, key=lambda a: a.significance, reverse=True)
-            for activity in sorted_activities[:3]:
+        # Memorable moments (significant activities) with defensive checks
+        try:
+            significant_activities = [
+                a for a in activities
+                if hasattr(a, 'significance') and
+                isinstance(getattr(a, 'significance', 0), (int, float)) and
+                getattr(a, 'significance', 0) > 7.0
+            ]
+            if significant_activities:
+                print()
                 if self.use_color:
-                    print(f"  • {Style.DIM}{activity.description}{Style.RESET_ALL}")
+                    print(f"{Fore.YELLOW}{Style.BRIGHT}💭 Memorable Moments:{Style.RESET_ALL}")
                 else:
-                    print(f"  • {activity.description}")
+                    print("💭 Memorable Moments:")
+
+                # Show top 3 most significant with safe sorting
+                try:
+                    sorted_activities = sorted(
+                        significant_activities,
+                        key=lambda a: getattr(a, 'significance', 0),
+                        reverse=True
+                    )
+                    for activity in sorted_activities[:3]:
+                        description = getattr(activity, 'description', 'Unknown activity')
+                        if self.use_color:
+                            print(f"  • {Style.DIM}{description}{Style.RESET_ALL}")
+                        else:
+                            print(f"  • {description}")
+                except Exception as e:
+                    print(f"  • Error displaying memorable moments: {e}")
+        except Exception as e:
+            print(f"  • Error processing significant activities: {e}")
 
         # Footer
         print("\n" + "━" * 70)
@@ -1149,6 +1263,15 @@ Until next time, trainer!
             self.print_info("No significant activities occurred while you were away.")
             return
 
+        # Validate input types to prevent crashes
+        if not isinstance(activities, list):
+            self.print_error("Timeline data format error - invalid activities list")
+            return
+
+        if not isinstance(hours_elapsed, (int, float)) or hours_elapsed < 0:
+            self.print_error("Timeline data format error - invalid time duration")
+            return
+
         days = hours_elapsed / 24
 
         # Header
@@ -1159,14 +1282,25 @@ Until next time, trainer!
 
         print("━" * 70 + "\n")
 
-        # Group by day
+        # Group by day with defensive checks
         from datetime import datetime
         activities_by_day = {}
         for activity in activities:
-            day_key = activity.timestamp.strftime("%B %d, %Y")  # "October 28, 2025"
-            if day_key not in activities_by_day:
-                activities_by_day[day_key] = []
-            activities_by_day[day_key].append(activity)
+            # Validate activity has timestamp attribute
+            if not hasattr(activity, 'timestamp'):
+                continue  # Skip activities without timestamp
+
+            try:
+                timestamp = getattr(activity, 'timestamp', None)
+                if timestamp is None:
+                    continue
+
+                day_key = timestamp.strftime("%B %d, %Y")  # "October 28, 2025"
+                if day_key not in activities_by_day:
+                    activities_by_day[day_key] = []
+                activities_by_day[day_key].append(activity)
+            except (AttributeError, ValueError) as e:
+                continue  # Skip activities with invalid timestamps
 
         # Print each day
         for day_key in sorted(activities_by_day.keys()):
@@ -1177,28 +1311,58 @@ Until next time, trainer!
 
             day_activities = activities_by_day[day_key]
 
-            for activity in sorted(day_activities, key=lambda a: a.timestamp):
-                time_str = activity.timestamp.strftime("%I:%M %p")
-                significant_marker = "⭐ " if getattr(activity, 'significance', 0) > 7.0 else "   "
+            # Sort activities with defensive key function
+            try:
+                sorted_activities = sorted(
+                    day_activities,
+                    key=lambda a: getattr(a, 'timestamp', datetime.min)
+                )
+            except Exception:
+                sorted_activities = day_activities  # Use unsorted if sorting fails
 
-                if self.use_color:
-                    print(f"  {significant_marker}{Style.DIM}{time_str}{Style.RESET_ALL} - {activity.description}")
-                else:
-                    print(f"  {significant_marker}{time_str} - {activity.description}")
+            for activity in sorted_activities:
+                try:
+                    timestamp = getattr(activity, 'timestamp', None)
+                    if timestamp is None:
+                        time_str = "Unknown time"
+                    else:
+                        time_str = timestamp.strftime("%I:%M %p")
 
-                # Show state changes if any
-                if hasattr(activity, 'state_changes') and activity.state_changes:
-                    changes = []
-                    for stat, delta in activity.state_changes.items():
-                        if delta != 0:
-                            sign = "+" if delta > 0 else ""
-                            changes.append(f"{stat} {sign}{delta}")
+                    # Safely get significance
+                    significance = getattr(activity, 'significance', 0)
+                    if isinstance(significance, (int, float)) and significance > 7.0:
+                        significant_marker = "⭐ "
+                    else:
+                        significant_marker = "   "
 
-                    if changes:
-                        if self.use_color:
-                            print(f"           {Style.DIM}({', '.join(changes)}){Style.RESET_ALL}")
-                        else:
-                            print(f"           ({', '.join(changes)})")
+                    # Safely get description
+                    description = getattr(activity, 'description', 'Unknown activity')
+
+                    if self.use_color:
+                        print(f"  {significant_marker}{Style.DIM}{time_str}{Style.RESET_ALL} - {description}")
+                    else:
+                        print(f"  {significant_marker}{time_str} - {description}")
+
+                    # Show state changes if any with defensive checks
+                    if hasattr(activity, 'state_changes') and activity.state_changes:
+                        try:
+                            changes = []
+                            for stat, delta in activity.state_changes.items():
+                                if delta != 0:
+                                    sign = "+" if delta > 0 else ""
+                                    changes.append(f"{stat} {sign}{delta}")
+
+                            if changes:
+                                if self.use_color:
+                                    print(f"           {Style.DIM}({', '.join(changes)}){Style.RESET_ALL}")
+                                else:
+                                    print(f"           ({', '.join(changes)})")
+                        except Exception:
+                            pass  # Skip state changes display if it fails
+
+                except Exception as e:
+                    # If any activity processing fails, show a safe fallback
+                    print(f"  • Error displaying activity: {e}")
 
             print()  # Space between days
 

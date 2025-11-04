@@ -142,7 +142,8 @@ class PrefrontalCortex(BrainRegion):
     """Logic, planning, and long-term thinking"""
 
     def __init__(self):
-        super().__init__("Prefrontal Cortex", 0.25)
+        from config import Config
+        super().__init__("Prefrontal Cortex", Config.VOTE_WEIGHT_PREFRONTAL)
 
     def get_role_description(self) -> str:
         return "Logic & Planning - Evaluates long-term consequences and trainer relationship"
@@ -211,7 +212,8 @@ class Amygdala(BrainRegion):
     """Emotion and survival instincts"""
 
     def __init__(self):
-        super().__init__("Amygdala", 0.30)
+        from config import Config
+        super().__init__("Amygdala", Config.VOTE_WEIGHT_AMYGDALA)
 
     def get_role_description(self) -> str:
         return "Emotion & Survival - Processes fear, joy, and excitement"
@@ -317,7 +319,8 @@ class Hippocampus(BrainRegion):
     """Memory and context - Now powered by vector memory retrieval (Phase 3)"""
 
     def __init__(self, memory_retriever=None):
-        super().__init__("Hippocampus", 0.20)
+        from config import Config
+        super().__init__("Hippocampus", Config.VOTE_WEIGHT_HIPPOCAMPUS)
         self.memory_retriever = memory_retriever  # Optional: MemoryRetriever instance
 
     def get_role_description(self) -> str:
@@ -481,7 +484,8 @@ class Hypothalamus(BrainRegion):
     """Physical needs and drives"""
 
     def __init__(self):
-        super().__init__("Hypothalamus", 0.15)
+        from config import Config
+        super().__init__("Hypothalamus", Config.VOTE_WEIGHT_HYPOTHALAMUS)
 
     def get_role_description(self) -> str:
         return "Needs & Drives - Monitors hunger, energy, comfort, and physical state"
@@ -606,7 +610,8 @@ class BasalGanglia(BrainRegion):
     """
 
     def __init__(self):
-        super().__init__("Basal Ganglia", 0.10)
+        from config import Config
+        super().__init__("Basal Ganglia", Config.VOTE_WEIGHT_CEREBELLUM)  # Note: Config uses old name "cerebellum"
 
     def get_role_description(self) -> str:
         return "Instinct & Habits - Species-specific behaviors, automatic responses, and learned routines"

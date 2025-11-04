@@ -28,9 +28,12 @@ class PromptBuilder:
 
         memory_str = ""
         if memories:
-            memory_str = "Recent memories:\n"
-            for memory in memories[:3]:
-                memory_str += f"- {memory}\n"
+            # Validate memories before including
+            valid_memories = [mem for mem in memories if mem and isinstance(mem, str) and mem.strip()]
+            if valid_memories:
+                memory_str = "Recent memories:\n"
+                for memory in valid_memories[:3]:
+                    memory_str += f"- {memory.strip()}\n"
 
         prompt = f"""You are simulating Eevee's {region_name} in a brain council decision-making system.
 
@@ -45,6 +48,7 @@ Respond in first-person as this brain region, explaining your reasoning.
 
 {PromptBuilder._get_region_role(region_name)}
 
+IMPORTANT: Only reference memories if they are explicitly listed above. Do not invent or assume memories.
 Keep your response concise (2-3 sentences) and focused on your region's concerns."""
 
         return prompt
@@ -135,14 +139,26 @@ Response:"""
         emotion = brain_context.get('emotion', 'calm')
         retrieved_memories = brain_context.get('retrieved_memories', None)
 
-        # Build memory context section
+        # Build memory context section with enhanced validation
         memory_context = ""
         has_memories = retrieved_memories and len(retrieved_memories) > 0
 
+        # Validate memory structure to prevent hallucinations
+        validated_memories = []
         if has_memories:
+            for memory_item in retrieved_memories:
+                # Ensure memory item is properly structured
+                if (isinstance(memory_item, (tuple, list)) and
+                    len(memory_item) >= 3 and
+                    memory_item[0] is not None and
+                    isinstance(memory_item[0], str) and
+                    memory_item[0].strip()):  # Memory content exists and isn't empty
+                    validated_memories.append(memory_item)
+
+        if validated_memories:
             memory_context = "\nRelevant memories:\n"
-            for i, (content, metadata, relevance) in enumerate(retrieved_memories[:3], 1):  # Top 3 memories
-                memory_context += f"- {content}\n"
+            for i, (content, metadata, relevance) in enumerate(validated_memories[:3], 1):  # Top 3 validated memories
+                memory_context += f"- {content.strip()}\n"
         else:
             memory_context = "\n(No relevant past memories for this situation)\n"
 
@@ -169,8 +185,10 @@ Based on your internal decision, emotional state, and memories, respond naturall
 - Include body language in *asterisks* (e.g., *tail wagging*, *ears droop*)
 - Show the emotion: {emotion}
 - Reflect the decision: {decision}
-- IMPORTANT: Only reference memories if they appear in "Relevant memories" above
-- Do NOT invent or assume memories that are not explicitly listed
+- CRITICAL: Only reference memories if they appear in "Relevant memories" section above
+- Do NOT invent, assume, or hallucinate memories that are not explicitly listed
+- If no memories are listed, respond only to the current situation
+- Never mention colors, objects, or details not present in the listed memories
 - Keep response to 2-4 sentences
 - Be authentic and genuine
 
