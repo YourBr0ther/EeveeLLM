@@ -69,7 +69,12 @@ class BrainRegion(ABC):
             other_votes: List of RegionVote objects from other regions
             receptivity: How much this region is influenced (0.0 = immune, 1.0 = fully receptive)
         """
-        if not other_votes or receptivity == 0.0:
+        if not other_votes:
+            return
+
+        # Clamp receptivity to valid range
+        receptivity = max(0.0, min(1.0, receptivity))
+        if receptivity == 0.0:
             return
 
         # Calculate average emotion from other regions
@@ -77,15 +82,31 @@ class BrainRegion(ABC):
         total_intensity = 0.0
 
         for vote in other_votes:
+            # Validate vote attributes and handle edge cases
+            if not hasattr(vote, 'primary_emotion') or not hasattr(vote, 'arousal_level') or not hasattr(vote, 'emotional_weight'):
+                continue
+
             emotion = vote.primary_emotion
-            intensity = vote.arousal_level * vote.emotional_weight
+            if not emotion or emotion == "":
+                emotion = "neutral"
+
+            # Handle potential NaN or infinity values with bounds checking
+            arousal = getattr(vote, 'arousal_level', 0.5)
+            emotional_weight = getattr(vote, 'emotional_weight', 0.5)
+
+            # Clamp values to valid ranges
+            arousal = max(0.0, min(1.0, arousal)) if isinstance(arousal, (int, float)) and not (arousal != arousal) else 0.5  # NaN check
+            emotional_weight = max(0.0, min(1.0, emotional_weight)) if isinstance(emotional_weight, (int, float)) and not (emotional_weight != emotional_weight) else 0.5  # NaN check
+
+            intensity = arousal * emotional_weight
 
             if emotion not in emotion_counts:
                 emotion_counts[emotion] = 0.0
             emotion_counts[emotion] += intensity
             total_intensity += intensity
 
-        if total_intensity == 0:
+        # Handle edge cases: no valid emotions or zero total intensity
+        if not emotion_counts or total_intensity <= 1e-6:  # Use small epsilon instead of exact zero
             return
 
         # Find dominant emotion
@@ -94,6 +115,10 @@ class BrainRegion(ABC):
 
         # Apply contagion with decay
         if dominant_emotion != "neutral":
+            # Validate current emotion_intensity
+            if not hasattr(self, 'emotion_intensity') or not isinstance(self.emotion_intensity, (int, float)) or self.emotion_intensity != self.emotion_intensity:
+                self.emotion_intensity = 0.5  # Default if invalid
+
             # Blend current emotion with incoming emotion
             self.current_emotion = dominant_emotion
             self.emotion_intensity = (

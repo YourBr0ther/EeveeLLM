@@ -83,7 +83,7 @@ def test_memory_deduplication():
     config = {
         'memory_retrieval_count': 5,
         'memory_significance_threshold': 6.0,
-        'max_working_memory': 10
+        'max_working_memory': 100
     }
     retriever = MemoryRetriever(vector_store=store, config=config)
 
@@ -154,7 +154,7 @@ def test_working_memory_integration():
     config = {
         'memory_retrieval_count': 5,
         'memory_significance_threshold': 6.0,
-        'max_working_memory': 10
+        'max_working_memory': 100
     }
     retriever = MemoryRetriever(vector_store=store, config=config)
 
@@ -200,7 +200,7 @@ def test_optimized_retrieval():
     config = {
         'memory_retrieval_count': 3,  # Request only 3 memories
         'memory_significance_threshold': 6.0,
-        'max_working_memory': 10
+        'max_working_memory': 100
     }
     retriever = MemoryRetriever(vector_store=store, config=config)
 

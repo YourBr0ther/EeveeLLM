@@ -127,7 +127,7 @@ def test_retrieval_of_fact():
     config = {
         'memory_retrieval_count': 5,
         'memory_significance_threshold': 6.0,
-        'max_working_memory': 10
+        'max_working_memory': 100
     }
     retriever = MemoryRetriever(vector_store=store, config=config)
 

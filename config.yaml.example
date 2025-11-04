@@ -13,7 +13,7 @@ initial_happiness: 85
 initial_health: 95
 initial_hunger: 40
 initial_trust: 50
-max_working_memory: 10
+max_working_memory: 100
 memory_retrieval_count: 5
 memory_significance_threshold: 6.0
 

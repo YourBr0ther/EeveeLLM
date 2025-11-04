@@ -128,7 +128,7 @@ class AlwaysOnManager:
 
                 # Add items to inventory
                 for item in items_found:
-                    self.eevee_state.add_item_to_inventory(item)
+                    self.eevee_state.add_item(item)
 
                 self.last_simulation = now
                 self.total_simulations += 1

@@ -84,20 +84,43 @@ class NanoGPTClient:
             )
 
             response.raise_for_status()
-            data = response.json()
+
+            # Parse JSON response with error handling
+            try:
+                data = response.json()
+            except ValueError as e:
+                logger.error(f"Failed to parse JSON response: {e}. Response text: {response.text[:200]}")
+                return self._fallback_generate(prompt)
+
+            # Validate that response is a dictionary
+            if not isinstance(data, dict):
+                logger.error(f"API response is not a dictionary. Type: {type(data)}, Value: {str(data)[:200]}")
+                return self._fallback_generate(prompt)
 
             # Extract generated text from OpenAI-compatible response
-            if "choices" in data and len(data["choices"]) > 0:
+            if "choices" in data and isinstance(data["choices"], list) and len(data["choices"]) > 0:
                 choice = data["choices"][0]
-                # Handle both 'message' (chat) and 'text' (completion) formats
-                if "message" in choice:
-                    return choice["message"].get("content", "").strip()
-                elif "text" in choice:
-                    return choice["text"].strip()
-            elif "text" in data:
-                return data["text"].strip()
+                if not isinstance(choice, dict):
+                    logger.error(f"Choice is not a dictionary: {choice}")
+                    return self._fallback_generate(prompt)
 
-            logger.error(f"Unexpected API response format: {data}")
+                # Handle both 'message' (chat) and 'text' (completion) formats
+                if "message" in choice and isinstance(choice["message"], dict):
+                    content = choice["message"].get("content", "")
+                    if content and isinstance(content, str):
+                        return content.strip()
+                elif "text" in choice:
+                    text = choice["text"]
+                    if text and isinstance(text, str):
+                        return text.strip()
+            elif "text" in data:
+                text = data["text"]
+                if text and isinstance(text, str):
+                    return text.strip()
+
+            # Log detailed information about unexpected response format
+            logger.error(f"Unexpected API response format. Keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
+            logger.error(f"Response sample: {str(data)[:300]}")
             return self._fallback_generate(prompt)
 
         except requests.exceptions.RequestException as e:

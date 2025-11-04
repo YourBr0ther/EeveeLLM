@@ -1006,11 +1006,11 @@ class EeveeLLM:
 
         # Validate data structure
         required_keys = ['activities', 'hours_elapsed']
-        if detailed:
-            missing_keys = [key for key in required_keys if key not in data]
-        else:
+        if not detailed:
+            # Summary view needs additional keys for stats display
             required_keys.extend(['net_changes', 'items_found'])
-            missing_keys = [key for key in required_keys if key not in data]
+
+        missing_keys = [key for key in required_keys if key not in data]
 
         if missing_keys:
             logger.error(f"Timeline data missing required keys: {missing_keys}")
