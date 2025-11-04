@@ -414,6 +414,17 @@ class EeveeLLM:
             else:
                 self.ui.print_info("Drop what item?\n💡 Try: 'drop Oran Berry' or 'inventory' to see what you have")
 
+        elif command in ["equip", "wear"]:
+            # Equip Translation Collar
+            if args and "collar" in args.lower():
+                self.equip_collar()
+            else:
+                self.ui.print_info("Equip what?\n💡 Try: 'equip collar' or 'wear collar'")
+
+        elif command in ["unequip", "remove_collar"]:
+            # Unequip Translation Collar
+            self.unequip_collar()
+
         elif command == "go":
             if args:
                 self.travel_to(args)
@@ -1242,6 +1253,78 @@ class EeveeLLM:
         except Exception as e:
             logger.error(f"Error handling proactive event: {e}", exc_info=True)
             # Don't crash - just log the error
+
+    def equip_collar(self):
+        """Equip the Translation Collar"""
+        try:
+            if self.eevee_state.has_translation_collar:
+                self.ui.print_info("The Translation Collar is already equipped!")
+                return
+
+            if not self.eevee_state.has_item("translation_collar"):
+                self.ui.print_warning("You don't have a Translation Collar in your inventory.")
+                self.ui.print_info("💡 The Translation Collar is a very rare treasure item that can be found during exploration!")
+                return
+
+            # Equip the collar
+            success = self.eevee_state.equip_translation_collar()
+            if success:
+                self.ui.print_user_input("*carefully puts the Translation Collar on Eevee*")
+
+                # Generate Eevee's response to getting the collar
+                context = self._build_context()
+                response, _ = self.response_gen.generate_response(
+                    "The trainer puts the Translation Collar on me",
+                    context,
+                    debug=self.debug_mode,
+                    world_map=self.world
+                )
+
+                self.ui.print_eevee_response(response)
+                self.ui.print_success("Translation Collar equipped! Eevee can now speak broken English!")
+
+                # Increase happiness for the special item
+                self.eevee_state.update_physical_state(
+                    happiness=min(100, self.eevee_state.happiness + 15)
+                )
+
+                self._update_after_interaction("equip_collar", "equip collar", response)
+            else:
+                self.ui.print_error("Failed to equip the collar")
+
+        except Exception as e:
+            logger.error(f"Error equipping collar: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to equip collar: {e}")
+
+    def unequip_collar(self):
+        """Unequip the Translation Collar"""
+        try:
+            if not self.eevee_state.has_translation_collar:
+                self.ui.print_info("Eevee is not wearing a Translation Collar.")
+                return
+
+            self.ui.print_user_input("*gently removes the Translation Collar from Eevee*")
+
+            # Generate Eevee's response to losing the collar (still with collar speech for this response)
+            context = self._build_context()
+            response, _ = self.response_gen.generate_response(
+                "The trainer removes my Translation Collar",
+                context,
+                debug=self.debug_mode,
+                world_map=self.world
+            )
+
+            self.ui.print_eevee_response(response)
+
+            # Now remove the collar
+            self.eevee_state.unequip_translation_collar()
+            self.ui.print_success("Translation Collar removed. Eevee will now communicate with Pokemon sounds only.")
+
+            self._update_after_interaction("unequip_collar", "remove collar", response)
+
+        except Exception as e:
+            logger.error(f"Error unequipping collar: {e}", exc_info=True)
+            self.ui.print_error(f"Failed to unequip collar: {e}")
 
     def shutdown(self):
         """Save and shutdown"""

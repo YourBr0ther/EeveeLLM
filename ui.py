@@ -359,11 +359,16 @@ class TerminalUI:
   drop [item]           - Drop/remove an item (asks for confirmation on keepsakes)
   💬 Natural: "Drop the stick" • "Get rid of the trash"
 
+📿 TRANSLATION COLLAR
+  equip collar / wear collar - Equip Translation Collar (enables human speech)
+  unequip                    - Remove Translation Collar (back to Pokemon sounds)
+
 🍊 ITEM TYPES:
   • Berries      - Restore hunger
   • Medicine     - Restore health
   • Toys         - Increase happiness
   • Treasures    - Rare keepsakes (can't be re-found!)
+                   Special: Translation Collar enables human speech!
 
 💡 Type 'help' to see all categories
             """
@@ -754,6 +759,26 @@ Until next time, trainer!
             f"Independent {personality.independence}/10"
         ]
         print("  " + " • ".join(traits))
+
+        # Translation Collar Status
+        print()
+        if self.use_color:
+            print(f"{Fore.BLUE}{Style.BRIGHT}📿 TRANSLATION COLLAR{Style.RESET_ALL}", end="")
+        else:
+            print("📿 TRANSLATION COLLAR", end="")
+
+        if state.has_translation_collar:
+            collar_status = " 🟢 EQUIPPED (Can speak broken English)"
+            if self.use_color:
+                print(f"{Fore.GREEN}{collar_status}{Style.RESET_ALL}")
+            else:
+                print(collar_status)
+        else:
+            collar_status = " 🔴 NOT EQUIPPED (Pokemon sounds only)"
+            if self.use_color:
+                print(f"{Fore.RED}{collar_status}{Style.RESET_ALL}")
+            else:
+                print(collar_status)
 
         # Inventory Preview
         print()

@@ -138,6 +138,7 @@ Response:"""
         reasoning = brain_context.get('reasoning', '')
         emotion = brain_context.get('emotion', 'calm')
         retrieved_memories = brain_context.get('retrieved_memories', None)
+        has_translation_collar = context.get('has_translation_collar', False)
 
         # Build memory context section with enhanced validation
         memory_context = ""
@@ -167,6 +168,19 @@ Response:"""
         if 'current_session' in context and context['current_session']:
             session_context = f"\n\nCurrent conversation:\n{context['current_session']}\n"
 
+        # Create speech instructions based on collar status
+        if has_translation_collar:
+            speech_instructions = """- Speak in simple broken English with occasional Pokemon sounds
+- Use basic grammar: "Me happy!", "You good friend!", "Want food now!"
+- Mix in some "Vee!" sounds when excited or emotional
+- Simple vocabulary: trainer → "friend", hungry → "want food", tired → "sleepy"
+- Questions: "You okay?", "Where go?", "Play with me?"
+- Express emotions simply: "Me so happy!", "Me scared...", "Love you!" """
+        else:
+            speech_instructions = """- Use Pokemon sounds ("Vee!", "Veevee!", "Eevee!", etc.)
+- Express yourself through body language and Pokemon vocalizations
+- No human words, only authentic Pokemon communication"""
+
         prompt = f"""You are Eevee, a curious and loyal Pokemon companion.
 {session_context}
 Situation: "{user_input}"
@@ -179,9 +193,10 @@ Current state:
 - Happiness: {state.get('happiness', 50)}/100
 - Energy: {state.get('energy', 50)}/100
 - Hunger: {state.get('hunger', 50)}/100
+{"- Translation Collar: EQUIPPED (can speak broken English)" if has_translation_collar else "- Translation Collar: Not equipped (Pokemon sounds only)"}
 
 Based on your internal decision, emotional state, and memories, respond naturally:
-- Use Pokemon sounds ("Vee!", "Veevee!", "Eevee!", etc.)
+{speech_instructions}
 - Include body language in *asterisks* (e.g., *tail wagging*, *ears droop*)
 - Show the emotion: {emotion}
 - Reflect the decision: {decision}
@@ -212,6 +227,20 @@ Eevee's response:"""
         state = context.get('physical_state', {})
         location = context.get('location', 'unknown')
         relationship = context.get('relationship', {})
+        has_translation_collar = context.get('has_translation_collar', False)
+
+        # Create speech instructions based on collar status
+        if has_translation_collar:
+            speech_instructions = """- Speak in simple broken English with occasional Pokemon sounds
+- Use basic grammar: "Me happy!", "You good friend!", "Want food now!"
+- Mix in some "Vee!" sounds when excited or emotional
+- Simple vocabulary: trainer → "friend", hungry → "want food", tired → "sleepy"
+- Questions: "You okay?", "Where go?", "Play with me?"
+- Express emotions simply: "Me so happy!", "Me scared...", "Love you!" """
+        else:
+            speech_instructions = """- Use Pokemon sounds ("Vee!", "Veevee!", "Eevee!", etc.)
+- Express yourself through body language and Pokemon vocalizations
+- No human words, only authentic Pokemon communication"""
 
         prompt = f"""You are Eevee, a curious and loyal Pokemon companion.
 
@@ -220,11 +249,12 @@ Current situation:
 - Happiness: {state.get('happiness', 50)}/100
 - Energy: {state.get('energy', 50)}/100
 - Trust in trainer: {relationship.get('trust', 50)}/100
+{"- Translation Collar: EQUIPPED (can speak broken English)" if has_translation_collar else "- Translation Collar: Not equipped (Pokemon sounds only)"}
 
 User says: "{user_input}"
 
 Respond as Eevee would:
-- Use Pokemon sounds ("Vee!", "Veevee!", "Eevee!", etc.)
+{speech_instructions}
 - Include body language in *asterisks* (e.g., *tail wagging*, *perks up*)
 - Show genuine emotion and personality
 - React authentically based on current state

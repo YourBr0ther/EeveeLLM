@@ -56,7 +56,10 @@ class EeveeState:
 
                     -- Metadata
                     total_interactions INTEGER DEFAULT 0,
-                    memories_count INTEGER DEFAULT 0
+                    memories_count INTEGER DEFAULT 0,
+
+                    -- Speech Mode (Translation Collar)
+                    has_translation_collar BOOLEAN DEFAULT 0
                 )
             """)
 
@@ -87,6 +90,15 @@ class EeveeState:
             """)
 
             conn.commit()
+
+            # Add migration for translation collar field if it doesn't exist
+            try:
+                cursor.execute("ALTER TABLE eevee_state ADD COLUMN has_translation_collar BOOLEAN DEFAULT 0")
+                conn.commit()
+                logger.info("Migration: Added has_translation_collar column")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
 
     def _load_or_create_state(self):
         """Load existing state or create new one"""
@@ -162,7 +174,8 @@ class EeveeState:
                     time_together_minutes = ?,
                     inventory = ?,
                     total_interactions = ?,
-                    memories_count = ?
+                    memories_count = ?,
+                    has_translation_collar = ?
                 WHERE id = 1
             """, (
                 datetime.now().isoformat(),
@@ -179,7 +192,8 @@ class EeveeState:
                 self._state['time_together_minutes'],
                 json.dumps(self._state['inventory']),
                 self._state['total_interactions'],
-                self._state['memories_count']
+                self._state['memories_count'],
+                self._state.get('has_translation_collar', False)
             ))
 
             conn.commit()
@@ -279,7 +293,18 @@ class EeveeState:
             'health': self.health
         }
 
-        # Use the item
+        # Special handling for Translation Collar
+        if item_id == "translation_collar":
+            if self.has_translation_collar:
+                return False, None, "The Translation Collar is already equipped!"
+            else:
+                # Equip the collar and get its effects
+                new_state, message = item.use(current_state)
+                self.update_physical_state(**new_state)
+                self._state['has_translation_collar'] = True
+                return True, new_state, f"{message} *The collar is now equipped and glowing softly*"
+
+        # Use the item normally
         new_state, message = item.use(current_state)
 
         # Apply state changes
@@ -290,6 +315,22 @@ class EeveeState:
             self.remove_item(item_id)
 
         return True, new_state, message
+
+    def equip_translation_collar(self) -> bool:
+        """
+        Equip the translation collar if it's in inventory
+
+        Returns:
+            True if equipped successfully, False if not in inventory
+        """
+        if self.has_item("translation_collar"):
+            self._state['has_translation_collar'] = True
+            return True
+        return False
+
+    def unequip_translation_collar(self):
+        """Unequip the translation collar"""
+        self._state['has_translation_collar'] = False
 
     def get_time_since_last_interaction(self) -> float:
         """Get hours since last interaction"""
@@ -344,6 +385,10 @@ class EeveeState:
     def weather(self) -> str:
         return self._state['weather']
 
+    @property
+    def has_translation_collar(self) -> bool:
+        return bool(self._state.get('has_translation_collar', False))
+
     def to_dict(self) -> Dict[str, Any]:
         """Export state as dictionary"""
         return {
@@ -363,7 +408,8 @@ class EeveeState:
                 'time_together_hours': self._state['time_together_minutes'] / 60
             },
             'inventory': self.inventory,
-            'total_interactions': self._state['total_interactions']
+            'total_interactions': self._state['total_interactions'],
+            'has_translation_collar': self.has_translation_collar
         }
 
     def __repr__(self):

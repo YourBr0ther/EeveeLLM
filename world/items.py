@@ -311,6 +311,20 @@ ITEMS_CATALOG: Dict[str, Item] = {
         consumable=False,
         emoji="🟡"
     ),
+
+    "translation_collar": Item(
+        id="translation_collar",
+        name="Translation Collar",
+        item_type=ItemType.TREASURE,
+        rarity=ItemRarity.VERY_RARE,
+        description="A mystical collar that allows Pokemon to speak in simple human language",
+        effect=ItemEffect(
+            happiness_delta=15,
+            description="*collar glows softly* Me can talk! Words come easy now!"
+        ),
+        consumable=False,
+        emoji="📿✨"
+    ),
 }
 
 
