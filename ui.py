@@ -19,6 +19,11 @@ class TerminalUI:
         self.width = width or Config.DISPLAY_WIDTH
         self.use_color = use_color if use_color is not None else Config.USE_COLOR
 
+        # Accessibility settings
+        self.simplified_output = Config.SIMPLIFIED_OUTPUT
+        self.reduce_emojis = Config.REDUCE_EMOJIS
+        self.high_contrast = Config.HIGH_CONTRAST
+
     def clear_screen(self):
         """Clear the terminal screen"""
         print("\033[2J\033[H", end="")
@@ -193,15 +198,43 @@ class TerminalUI:
         """Print location description"""
         print(f"\n{description}\n")
 
-    def get_input(self, prompt: str = "> ") -> str:
-        """Get user input"""
+    def get_input(self, prompt: str = "> ", show_hint: bool = False) -> str:
+        """
+        Get user input with optional natural language hint
+
+        Args:
+            prompt: Input prompt to display
+            show_hint: Whether to show natural language hint
+        """
         try:
-            if self.use_color:
-                return input(f"{Fore.WHITE}{Style.BRIGHT}{prompt}{Style.RESET_ALL}").strip()
+            # Enhanced prompt with natural language hint
+            if show_hint:
+                hint_prompt = f"{prompt} (Talk naturally or type a command) "
             else:
-                return input(prompt).strip()
+                hint_prompt = prompt
+
+            if self.use_color:
+                return input(f"{Fore.WHITE}{Style.BRIGHT}{hint_prompt}{Style.RESET_ALL}").strip()
+            else:
+                return input(hint_prompt).strip()
         except (EOFError, KeyboardInterrupt):
             return "exit"
+
+    def print_tip(self, tip: str, icon: str = "💡"):
+        """Print a helpful tip message"""
+        if self.use_color:
+            print(f"\n{Fore.CYAN}{Style.DIM}{icon} Tip: {tip}{Style.RESET_ALL}")
+        else:
+            print(f"\n{icon} Tip: {tip}")
+
+    def celebrate_natural_language(self):
+        """Celebrate when user first uses natural language successfully"""
+        if self.use_color:
+            print(f"\n{Fore.GREEN}{Style.BRIGHT}🎉 Hey! I understood that perfectly! 😊{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}{Style.DIM}You can always talk to me naturally - no need for exact commands!{Style.RESET_ALL}\n")
+        else:
+            print(f"\n🎉 Hey! I understood that perfectly! 😊")
+            print("You can always talk to me naturally - no need for exact commands!\n")
 
     def print_help(self, category: str = None):
         """
@@ -496,9 +529,22 @@ Until next time, trainer!
         Used for operations that take 1+ seconds.
         """
         if self.use_color:
-            print(f"{Fore.BLUE}{Style.DIM}{message}{Style.RESET_ALL}", end='', flush=True)
+            print(f"{Fore.BLUE}{Style.DIM}{message}...{Style.RESET_ALL}", end='', flush=True)
         else:
-            print(f"{message}", end='', flush=True)
+            print(f"{message}...", end='', flush=True)
+
+    def print_progress(self, message: str, icon: str = "⏳"):
+        """
+        Show progress with an animated icon
+
+        Args:
+            message: Progress message to display
+            icon: Animated icon (defaults to hourglass)
+        """
+        if self.use_color:
+            print(f"{Fore.CYAN}{Style.DIM}{icon} {message}...{Style.RESET_ALL}", end='', flush=True)
+        else:
+            print(f"{icon} {message}...", end='', flush=True)
 
     def clear_thinking(self):
         """Clear the thinking indicator line"""
@@ -552,6 +598,39 @@ Until next time, trainer!
             return response in ['y', 'yes']
         except (EOFError, KeyboardInterrupt):
             return False
+
+    def toggle_accessibility_mode(self, enabled: bool = True):
+        """
+        Toggle accessibility mode for better screen reader compatibility
+
+        Args:
+            enabled: Whether to enable accessibility mode
+        """
+        self.simplified_output = enabled
+        self.reduce_emojis = enabled
+        if enabled:
+            self.use_color = False  # Disable colors in accessibility mode
+
+        # Update global config
+        Config.SIMPLIFIED_OUTPUT = enabled
+        Config.REDUCE_EMOJIS = enabled
+        if enabled:
+            Config.USE_COLOR = False
+
+    def get_emoji(self, emoji: str, fallback: str = "") -> str:
+        """
+        Get emoji with accessibility fallback
+
+        Args:
+            emoji: The emoji to display
+            fallback: Text fallback for accessibility mode
+
+        Returns:
+            Emoji or fallback text based on accessibility settings
+        """
+        if self.reduce_emojis:
+            return fallback if fallback else ""
+        return emoji
 
     def print_stat_bar(self, label: str, value: int, max_value: int = 100,
                        emoji: str = "", reverse: bool = False) -> None:
@@ -649,17 +728,16 @@ Until next time, trainer!
         else:
             print("🤝 RELATIONSHIP")
 
-        trust_bar = int((state.trust / 100) * 20)
-        bond_bar = int((state.bond / 100) * 20)
+        # Use consistent stat bar format for relationship stats
+        self.print_stat_bar("Trust", state.trust, emoji="🤝")
+        self.print_stat_bar("Bond", state.bond, emoji="💕")
 
+        # Visual separator for better section hierarchy
+        print()
         if self.use_color:
-            trust_color = Fore.GREEN if state.trust >= 50 else Fore.YELLOW
-            bond_color = Fore.GREEN if state.bond >= 50 else Fore.YELLOW
-            print(f"  Trust: {trust_color}{'█' * trust_bar}{'░' * (20 - trust_bar)}{Style.RESET_ALL} {state.trust}%  |  "
-                  f"Bond: {bond_color}{'█' * bond_bar}{'░' * (20 - bond_bar)}{Style.RESET_ALL} {state.bond}%")
+            print(f"{Fore.CYAN}{Style.DIM}{'─' * 68}{Style.RESET_ALL}")
         else:
-            print(f"  Trust: {'█' * trust_bar}{'░' * (20 - trust_bar)} {state.trust}%  |  "
-                  f"Bond: {'█' * bond_bar}{'░' * (20 - bond_bar)} {state.bond}%")
+            print('─' * 68)
 
         # Personality Section
         print()
@@ -754,17 +832,21 @@ Until next time, trainer!
             ItemManager = None
             has_item_manager = False
 
-        # Header
+        # Enhanced header with better design
         if self.use_color:
-            print(f"\n{Fore.CYAN}{Style.BRIGHT}🎒 Inventory ({len(inventory_items)} items){Style.RESET_ALL}")
+            print(f"\n╔{'═' * 68}╗")
+            print(f"║{f'🎒 INVENTORY ({len(inventory_items)} items)'.center(68)}║")
+            print(f"╚{'═' * 68}╝")
         else:
-            print(f"\n🎒 Inventory ({len(inventory_items)} items)")
+            print(f"\n╔{'═' * 68}╗")
+            print(f"║{f'🎒 INVENTORY ({len(inventory_items)} items)'.center(68)}║")
+            print(f"╚{'═' * 68}╝")
 
-        print("━" * 70)
-
-        # Group items and count quantities
+        # Group items by type for better organization
+        items_by_type = {}
         item_counts = {}
         invalid_items = []
+
         for item_id in inventory_items:
             # Check if item_id is hashable before using as dict key
             try:
@@ -776,42 +858,69 @@ Until next time, trainer!
                 # Unhashable type (like dict, list) - add to invalid items
                 invalid_items.append(item_id)
 
-        # Display items compactly with safe ItemManager usage
-        display_items = []
+        # Categorize items for better display
         for item_id, count in item_counts.items():
             # Validate item_id type
             if not isinstance(item_id, str):
-                qty_str = f" × {count}" if count > 1 else ""
-                display_items.append(f"[Invalid: {type(item_id).__name__}]{qty_str}")
                 continue
 
             if has_item_manager:
                 try:
                     item_def = ItemManager.get_item(item_id)
                     if item_def:
+                        try:
+                            item_type = item_def.item_type.value if hasattr(item_def, 'item_type') else 'misc'
+                        except AttributeError:
+                            item_type = 'misc'
+
+                        if item_type not in items_by_type:
+                            items_by_type[item_type] = []
+
                         qty_str = f" × {count}" if count > 1 else ""
-                        display_items.append(f"{item_def.emoji} {item_def.name}{qty_str}")
+                        items_by_type[item_type].append(f"{item_def.emoji} {item_def.name}{qty_str}")
                     else:
+                        # Unknown item
+                        if 'misc' not in items_by_type:
+                            items_by_type['misc'] = []
                         qty_str = f" × {count}" if count > 1 else ""
-                        display_items.append(f"{item_id}{qty_str}")
+                        items_by_type['misc'].append(f"{item_id}{qty_str}")
                 except Exception:
+                    # Error getting item
+                    if 'misc' not in items_by_type:
+                        items_by_type['misc'] = []
                     qty_str = f" × {count}" if count > 1 else ""
-                    display_items.append(f"{item_id} (error){qty_str}")
+                    items_by_type['misc'].append(f"{item_id} (error){qty_str}")
             else:
                 # Fallback without ItemManager
+                if 'items' not in items_by_type:
+                    items_by_type['items'] = []
                 qty_str = f" × {count}" if count > 1 else ""
-                display_items.append(f"{item_id}{qty_str}")
+                items_by_type['items'].append(f"{item_id}{qty_str}")
 
-        # Add invalid items (unhashable types)
-        for item in invalid_items:
-            display_items.append(f"[Invalid: {type(item).__name__}]")
+        # Display items by category for better organization
+        category_emojis = {
+            'food': '🍎',
+            'medicine': '💊',
+            'toy': '🎾',
+            'treasure': '💎',
+            'misc': '📦',
+            'items': '📋'
+        }
 
-        # Print in rows of 3
-        for i in range(0, len(display_items), 3):
-            row_items = display_items[i:i+3]
-            # Pad each item to 22 characters for alignment
-            formatted_row = [f"{item:22}" for item in row_items]
-            print("  " + "  ".join(formatted_row))
+        for category, items in sorted(items_by_type.items()):
+            emoji = category_emojis.get(category, '📦')
+
+            print()
+            if self.use_color:
+                print(f"{Fore.YELLOW}{Style.BRIGHT}{emoji} {category.upper()}{Style.RESET_ALL}")
+            else:
+                print(f"{emoji} {category.upper()}")
+
+            # Print items in rows of 3
+            for i in range(0, len(items), 3):
+                row_items = items[i:i+3]
+                formatted_row = [f"{item:22}" for item in row_items]
+                print("  " + "  ".join(formatted_row))
 
         # Footer with tips
         print("━" * 70)
@@ -1172,13 +1281,15 @@ Until next time, trainer!
 
         days = hours_elapsed / 24
 
-        # Header
+        # Enhanced header with better visual hierarchy
         if self.use_color:
-            print(f"\n{Fore.CYAN}{Style.BRIGHT}📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days){Style.RESET_ALL}")
+            print(f"\n╔{'═' * 68}╗")
+            print(f"║{f'📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days)'.center(68)}║")
+            print(f"╚{'═' * 68}╝\n")
         else:
-            print(f"\n📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days)")
-
-        print("━" * 70 + "\n")
+            print(f"\n╔{'═' * 68}╗")
+            print(f"║{f'📅 TIMELINE: Last {hours_elapsed:.0f} hours ({days:.1f} days)'.center(68)}║")
+            print(f"╚{'═' * 68}╝\n")
 
         # Count activities by type with defensive checks
         activity_counts = {}
@@ -1200,9 +1311,14 @@ Until next time, trainer!
             'survival': '🛡️'
         }
 
-        # Show summary
+        # Show summary with better visual organization
         if self.use_color:
-            print(f"{Fore.YELLOW}{Style.BRIGHT}While you were away, Eevee:{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}{Style.BRIGHT}🎯 ACTIVITY SUMMARY{Style.RESET_ALL}")
+        else:
+            print("🎯 ACTIVITY SUMMARY")
+
+        if self.use_color:
+            print(f"{Style.DIM}While you were away, Eevee:{Style.RESET_ALL}")
         else:
             print("While you were away, Eevee:")
 
@@ -1214,12 +1330,19 @@ Until next time, trainer!
             else:
                 print(f"  {emoji} {type_name}: {count} time{'s' if count != 1 else ''}")
 
+        # Visual separator
+        print()
+        if self.use_color:
+            print(f"{Fore.CYAN}{Style.DIM}{'─' * 50}{Style.RESET_ALL}")
+        else:
+            print('─' * 50)
+
         # State changes
         print()
         if self.use_color:
-            print(f"{Fore.YELLOW}{Style.BRIGHT}📊 State Changes:{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}{Style.BRIGHT}📊 STATE CHANGES{Style.RESET_ALL}")
         else:
-            print("📊 State Changes:")
+            print("📊 STATE CHANGES")
 
         for stat, delta in net_changes.items():
             if delta == 0:

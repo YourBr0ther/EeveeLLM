@@ -82,6 +82,10 @@ class EeveeLLM:
         self.current_session_messages = []  # List of (user_input, eevee_response) tuples
         self.max_session_history = 15  # Keep last 15 exchanges in memory
 
+        # UI/UX Enhancement: Track first-time user interactions
+        self.interaction_count = 0  # Track total interactions for progressive hints
+        self.celebrated_natural_language = False  # Track if we've celebrated natural language use
+
         # Phase 3: Initialize memory system
         try:
             self.vector_store = VectorMemoryStore()
@@ -257,7 +261,9 @@ class EeveeLLM:
                         pass
 
                 # Get user input (with timeout for background tasks)
-                user_input = self.ui.get_input()
+                # Show natural language hint for first few interactions
+                show_hint = self.interaction_count < 3
+                user_input = self.ui.get_input(show_hint=show_hint)
 
                 if not user_input:
                     continue
@@ -288,6 +294,9 @@ class EeveeLLM:
     def process_command(self, user_input: str):
         """Process user command (with natural language support)"""
 
+        # UI/UX Enhancement: Track interactions and celebrate natural language use
+        self.interaction_count += 1
+
         # Try to parse natural language intent first
         intent = None
         is_natural_language = False
@@ -299,6 +308,12 @@ class EeveeLLM:
             command = intent.command
             args = intent.args
             is_natural_language = True
+
+            # Celebrate first successful natural language use
+            if not self.celebrated_natural_language and self.interaction_count <= 5:
+                self.ui.celebrate_natural_language()
+                self.celebrated_natural_language = True
+
             if Config.VERBOSE_LOGGING:
                 logger.info(f"Natural language detected: '{user_input}' → {command} {args}")
         else:
@@ -322,6 +337,10 @@ class EeveeLLM:
         elif command == "help":
             # Categorized help system
             self.ui.print_help(category=args if args else None)
+
+            # Show tip for new users
+            if self.interaction_count <= 10 and not args:
+                self.ui.print_tip("You can talk to Eevee naturally! Try 'How are you feeling?' instead of 'stats'", "🗣️")
 
         elif command == "stats":
             # If natural language (like "how are you?"), just respond naturally
@@ -379,6 +398,22 @@ class EeveeLLM:
 
         elif command == "debug":
             self.handle_debug_command(args)
+
+        elif command == "accessibility":
+            # Toggle accessibility mode
+            if args and args.lower() in ["on", "enable"]:
+                self.ui.toggle_accessibility_mode(True)
+                self.ui.print_success("Accessibility mode enabled - colors disabled, emojis reduced")
+            elif args and args.lower() in ["off", "disable"]:
+                self.ui.toggle_accessibility_mode(False)
+                # Re-enable colors
+                self.ui.use_color = Config.USE_COLOR
+                Config.USE_COLOR = True
+                self.ui.print_success("Accessibility mode disabled")
+            else:
+                status = "enabled" if self.ui.simplified_output else "disabled"
+                self.ui.print_info(f"Accessibility mode is currently {status}")
+                self.ui.print_info("Use 'accessibility on' or 'accessibility off' to toggle")
 
         elif command == "uptime":
             # Show always-on stats
@@ -496,6 +531,9 @@ class EeveeLLM:
             )
             self.eevee_state.update_relationship(trust_delta=1)
 
+            # Show feedback for the positive interaction
+            self.ui.print_success("Happiness +5, Trust +1")
+
             self._update_after_interaction("pet", "pet", response)
 
         except Exception as e:
@@ -520,8 +558,12 @@ class EeveeLLM:
                     hunger=min(100, self.eevee_state.hunger + 5)
                 )
                 self.eevee_state.update_relationship(bond_delta=2)
+
+                # Show feedback for the successful play session
+                self.ui.print_success("Happiness +10, Bond +2, Energy -10, Hunger +5")
             else:
-                self.ui.print_system_message("Eevee seems too tired to play much...")
+                self.ui.print_warning("Eevee seems too tired to play much...")
+                self.ui.print_tip("Try letting Eevee rest or giving them some food!", "💤")
 
             self._update_after_interaction("play", "play", response)
 
@@ -610,7 +652,7 @@ class EeveeLLM:
             # Eevee reacts to showing inventory (only if inventory not empty)
             if inventory:
                 try:
-                    self.ui.print_thinking("💭 Responding...")
+                    self.ui.print_progress("Eevee is looking at items", "👀")
 
                     context = self._build_context()
                     item_count = len(inventory)
@@ -713,6 +755,7 @@ class EeveeLLM:
             # Travel
             self.ui.print_system_message(f"Traveling to {target_loc.name}...")
             self.eevee_state.update_location(target_loc.id)
+            self.ui.print_success(f"Arrived at {target_loc.name}!")
 
             # Show new location
             self._show_scene()
@@ -866,7 +909,7 @@ class EeveeLLM:
                 return
 
             # Search memories
-            self.ui.print_thinking(f"📚 Searching memories for '{query}'...")
+            self.ui.print_progress(f"Searching memories for '{query}'", "🔍")
 
             results = self.memory_retriever.search_memories(query, limit=10)
 

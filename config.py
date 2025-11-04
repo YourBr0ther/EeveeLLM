@@ -86,6 +86,11 @@ class Config:
     USE_COLOR: bool = True
     SHOW_STATS_BAR: bool = True
 
+    # Accessibility Settings
+    SIMPLIFIED_OUTPUT: bool = False  # Reduce visual clutter for accessibility
+    REDUCE_EMOJIS: bool = False      # Use fewer emojis for screen readers
+    HIGH_CONTRAST: bool = False      # Use high contrast color scheme
+
     @classmethod
     def load_from_file(cls, config_path: str = "config.yaml") -> None:
         """Load configuration from YAML file"""
